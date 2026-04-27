@@ -90,6 +90,11 @@ public class UpdateJsonConverter : JsonConverter<Update>
             update.IsMuted = isMutedElement.GetBoolean();
         }
 
+        if (root.TryGetProperty("payload", out var payload))
+        {
+            update.Payload = payload.GetString();
+        }
+
         return update;
     }
 

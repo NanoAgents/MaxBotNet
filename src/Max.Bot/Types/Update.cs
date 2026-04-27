@@ -60,6 +60,12 @@ public class Update
     public Message? Message { get; set; }
 
     /// <summary>
+    /// Gets or sets the payload
+    /// </summary>
+    [JsonPropertyName("payload")]
+    public string? Payload { get; set; }
+
+    /// <summary>
     /// Gets or sets the callback query in this update.
     /// Present in: message_callback.
     /// Maps to "callback" field in API.
