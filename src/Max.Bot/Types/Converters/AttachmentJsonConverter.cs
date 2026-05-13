@@ -38,7 +38,7 @@ public class AttachmentJsonConverter : JsonConverter<Attachment>
         // Route by type name — primary and most reliable method
         if (IsType(typeString, AttachmentTypeNames.Image))
         {
-            return JsonSerializer.Deserialize<PhotoAttachment>(root.GetRawText(), options);
+            return DeserializePhotoAttachment(root, options);
         }
 
         if (IsType(typeString, AttachmentTypeNames.InlineKeyboard))
@@ -53,22 +53,22 @@ public class AttachmentJsonConverter : JsonConverter<Attachment>
 
         if (IsType(typeString, AttachmentTypeNames.Contact))
         {
-            return JsonSerializer.Deserialize<ContactAttachment>(root.GetRawText(), options);
+            return DeserializeContactAttachment(root, options);
         }
 
         if (IsType(typeString, AttachmentTypeNames.Video))
         {
-            return DeserializeAttachment<VideoAttachment>(root, "video", options);
+            return DeserializeMediaAttachment<VideoAttachment>(root, "video", options);
         }
 
         if (IsType(typeString, AttachmentTypeNames.Audio))
         {
-            return DeserializeAttachment<AudioAttachment>(root, "audio", options);
+            return DeserializeMediaAttachment<AudioAttachment>(root, "audio", options);
         }
 
         if (IsType(typeString, AttachmentTypeNames.File))
         {
-            return DeserializeAttachment<DocumentAttachment>(root, "document", options);
+            return DeserializeMediaAttachment<DocumentAttachment>(root, "document", options);
         }
 
         // Fallback for unknown types — use DocumentAttachment as it has the most generic fields
@@ -121,6 +121,119 @@ public class AttachmentJsonConverter : JsonConverter<Attachment>
         }
 
         return JsonSerializer.Deserialize<T>(root.GetRawText(), options);
+    }
+
+    private static PhotoAttachment? DeserializePhotoAttachment(JsonElement root, JsonSerializerOptions options)
+    {
+        if (root.TryGetProperty("payload", out var payload) && payload.ValueKind == JsonValueKind.Object)
+        {
+            var attachment = new PhotoAttachment();
+
+            if (payload.TryGetProperty("id", out var idElement) && idElement.ValueKind == JsonValueKind.Number && idElement.TryGetInt64(out var id))
+            {
+                attachment.Id = id;
+            }
+            else if (payload.TryGetProperty("photo_id", out var photoIdElement) && photoIdElement.ValueKind == JsonValueKind.Number && photoIdElement.TryGetInt64(out var photoId))
+            {
+                attachment.Id = photoId;
+            }
+
+            if (payload.TryGetProperty("file_id", out var fileIdElement) && fileIdElement.ValueKind == JsonValueKind.String)
+            {
+                attachment.FileId = fileIdElement.GetString() ?? string.Empty;
+            }
+            else if (payload.TryGetProperty("token", out var tokenElement) && tokenElement.ValueKind == JsonValueKind.String)
+            {
+                attachment.FileId = tokenElement.GetString() ?? string.Empty;
+            }
+
+            if (payload.TryGetProperty("width", out var widthElement) && widthElement.ValueKind == JsonValueKind.Number && widthElement.TryGetInt32(out var width))
+            {
+                attachment.Width = width;
+            }
+
+            if (payload.TryGetProperty("height", out var heightElement) && heightElement.ValueKind == JsonValueKind.Number && heightElement.TryGetInt32(out var height))
+            {
+                attachment.Height = height;
+            }
+
+            if (payload.TryGetProperty("file_size", out var fileSizeElement) && fileSizeElement.ValueKind == JsonValueKind.Number && fileSizeElement.TryGetInt64(out var fileSize))
+            {
+                attachment.FileSize = fileSize;
+            }
+
+            if (payload.TryGetProperty("url", out var urlElement) && urlElement.ValueKind == JsonValueKind.String)
+            {
+                attachment.Url = urlElement.GetString();
+            }
+
+            return attachment;
+        }
+
+        if (root.TryGetProperty("photo", out var photo) && photo.ValueKind == JsonValueKind.Object)
+        {
+            var attachment = JsonSerializer.Deserialize<PhotoAttachment>(photo.GetRawText(), options);
+            if (attachment != null)
+            {
+                attachment.Type = AttachmentTypeNames.Image;
+            }
+
+            return attachment;
+        }
+
+        return JsonSerializer.Deserialize<PhotoAttachment>(root.GetRawText(), options);
+    }
+
+    private static ContactAttachment? DeserializeContactAttachment(JsonElement root, JsonSerializerOptions options)
+    {
+        if (root.TryGetProperty("payload", out var payload) && payload.ValueKind == JsonValueKind.Object)
+        {
+            var attachment = JsonSerializer.Deserialize<ContactAttachment>(payload.GetRawText(), options);
+            if (attachment != null)
+            {
+                // Ensure type is always set even when payload does not include it.
+                attachment.Type = AttachmentTypeNames.Contact;
+            }
+            return attachment;
+        }
+
+        return JsonSerializer.Deserialize<ContactAttachment>(root.GetRawText(), options);
+    }
+
+    private static T? DeserializeMediaAttachment<T>(JsonElement root, string payloadPropertyName, JsonSerializerOptions options)
+        where T : Attachment
+    {
+        if (root.TryGetProperty("payload", out var payload) && payload.ValueKind == JsonValueKind.Object)
+        {
+            var attachment = JsonSerializer.Deserialize<T>(payload.GetRawText(), options);
+            if (attachment == null)
+            {
+                return null;
+            }
+
+            switch (attachment)
+            {
+                case AudioAttachment audio when string.IsNullOrWhiteSpace(audio.FileId)
+                    && payload.TryGetProperty("token", out var audioToken)
+                    && audioToken.ValueKind == JsonValueKind.String:
+                    audio.FileId = audioToken.GetString() ?? string.Empty;
+                    break;
+                case VideoAttachment video when string.IsNullOrWhiteSpace(video.FileId)
+                    && payload.TryGetProperty("token", out var videoToken)
+                    && videoToken.ValueKind == JsonValueKind.String:
+                    video.FileId = videoToken.GetString() ?? string.Empty;
+                    break;
+                case DocumentAttachment document when string.IsNullOrWhiteSpace(document.FileId)
+                    && payload.TryGetProperty("token", out var documentToken)
+                    && documentToken.ValueKind == JsonValueKind.String:
+                    document.FileId = documentToken.GetString() ?? string.Empty;
+                    break;
+            }
+
+            return attachment;
+        }
+
+        return DeserializeAttachment<T>(root, payloadPropertyName, options);
     }
 
     private static bool IsType(string? actualType, string expectedType)

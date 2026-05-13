@@ -32,6 +32,7 @@ public class CallbackQuery
     /// Gets or sets the message with the inline button that was pressed.
     /// </summary>
     /// <value>The message with the inline button, or null if not available.</value>
+    [Obsolete("CallbackQuery.Message is not populated by current MAX API webhook contract. Use CallbackQueryUpdate.Message from Update.CallbackQueryUpdate instead.")]
     [JsonIgnore]
     public Message? Message { get; set; }
 

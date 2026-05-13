@@ -77,7 +77,7 @@ public class UpdateTests
     public void Deserialize_MessageCallback_ShouldDeserializeCorrectly()
     {
         // Arrange - API format uses "callback" field
-        var json = """{"update_id":2,"update_type":"message_callback","timestamp":1609459200000,"callback":{"callback_id":"cb123","user":{"user_id":123,"username":"user123","is_bot":false},"payload":"button_clicked","timestamp":1609459200000}}""";
+        var json = """{"update_id":2,"update_type":"message_callback","timestamp":1609459200000,"message":{"body":{"mid":"mid.cb.1","text":"Button host"},"timestamp":1609459200000},"callback":{"callback_id":"cb123","user":{"user_id":123,"username":"user123","is_bot":false},"payload":"button_clicked","timestamp":1609459200000}}""";
 
         // Act
         var result = MaxJsonSerializer.Deserialize<Update>(json);
@@ -99,6 +99,8 @@ public class UpdateTests
         result.CallbackQueryUpdate!.UpdateId.Should().Be(2);
         result.CallbackQueryUpdate.CallbackQuery.Should().NotBeNull();
         result.CallbackQueryUpdate.CallbackQuery.CallbackId.Should().Be("cb123");
+        result.CallbackQueryUpdate.Message.Should().NotBeNull();
+        result.CallbackQueryUpdate.Message!.Body!.Mid.Should().Be("mid.cb.1");
     }
 
     #endregion

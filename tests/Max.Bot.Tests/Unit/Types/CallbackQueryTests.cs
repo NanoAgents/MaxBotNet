@@ -22,9 +22,7 @@ public class CallbackQueryTests
         callbackQuery.User.Should().NotBeNull();
         callbackQuery.User!.Id.Should().Be(123);
         callbackQuery.User.Username.Should().Be("user123");
-        callbackQuery.Message.Should().NotBeNull();
-        callbackQuery.Message!.Body?.Mid.Should().Be("msg456");
-        callbackQuery.Message.Text.Should().Be("Test message");
+        callbackQuery.Message.Should().BeNull();
         callbackQuery.Payload.Should().Be("payload123");
         callbackQuery.Timestamp.Should().Be(1609459200000);
     }

@@ -53,12 +53,6 @@ public class CallbackQueryJsonConverter : JsonConverter<CallbackQuery>
             callbackQuery.Timestamp = timestampElement.GetInt64();
         }
 
-        // Read message
-        if (root.TryGetProperty("message", out var messageElement))
-        {
-            callbackQuery.Message = JsonSerializer.Deserialize<Message>(messageElement.GetRawText(), options);
-        }
-
         return callbackQuery;
     }
 
@@ -90,13 +84,6 @@ public class CallbackQueryJsonConverter : JsonConverter<CallbackQuery>
         if (value.Timestamp.HasValue)
         {
             writer.WriteNumber("timestamp", value.Timestamp.Value);
-        }
-
-        // Write message if present
-        if (value.Message != null)
-        {
-            writer.WritePropertyName("message");
-            JsonSerializer.Serialize(writer, value.Message, options);
         }
 
         writer.WriteEndObject();

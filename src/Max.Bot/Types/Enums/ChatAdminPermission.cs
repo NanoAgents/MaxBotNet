@@ -8,6 +8,12 @@ namespace Max.Bot.Types.Enums;
 public enum ChatAdminPermission
 {
     /// <summary>
+    /// Permission to view stats.
+    /// Serializes as "view_stats".
+    /// </summary>
+    ViewStats,
+
+    /// <summary>
     /// Permission to read all messages in the chat.
     /// Serializes as "read_all_messages".
     /// </summary>
@@ -56,6 +62,12 @@ public enum ChatAdminPermission
     EditLink,
 
     /// <summary>
+    /// Permission to edit messages (short form in MAX API).
+    /// Serializes as "edit".
+    /// </summary>
+    Edit,
+
+    /// <summary>
     /// Permission to edit or delete posted messages.
     /// Serializes as "post_edit_delete_message".
     /// </summary>
@@ -72,4 +84,10 @@ public enum ChatAdminPermission
     /// Serializes as "delete_message".
     /// </summary>
     DeleteMessage,
+
+    /// <summary>
+    /// Permission to delete messages (short form in MAX API).
+    /// Serializes as "delete".
+    /// </summary>
+    Delete,
 }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
@@ -8,6 +9,12 @@ namespace Max.Bot.Types;
 /// </summary>
 public class Video
 {
+    /// <summary>
+    /// Gets or sets the media token returned by /videos/{token}.
+    /// </summary>
+    [JsonPropertyName("token")]
+    public string? Token { get; set; }
+
     /// <summary>
     /// Gets or sets the unique identifier of the video.
     /// </summary>
@@ -71,6 +78,30 @@ public class Video
     /// <value>The URL of the video, or null if not available.</value>
     [Url(ErrorMessage = "URL must be a valid URL if provided.")]
     [StringLength(2048, ErrorMessage = "URL must not exceed 2048 characters.")]
+    [JsonPropertyName("url")]
+    public string? Url { get; set; }
+
+    /// <summary>
+    /// Gets or sets quality-specific video URLs keyed by rendition name (for example, mp4_720).
+    /// </summary>
+    [JsonPropertyName("urls")]
+    public Dictionary<string, string>? Urls { get; set; }
+
+    /// <summary>
+    /// Gets or sets the thumbnail for this video.
+    /// </summary>
+    [JsonPropertyName("thumbnail")]
+    public VideoThumbnail? Thumbnail { get; set; }
+}
+
+/// <summary>
+/// Represents a preview image for a video.
+/// </summary>
+public class VideoThumbnail
+{
+    /// <summary>
+    /// Gets or sets the thumbnail URL.
+    /// </summary>
     [JsonPropertyName("url")]
     public string? Url { get; set; }
 }

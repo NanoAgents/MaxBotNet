@@ -57,6 +57,20 @@ public class AttachmentFormatTests
         photo.FileId.Should().Be("abc123");
     }
 
+    [Fact]
+    public void Photo_PayloadFormat_ShouldDeserialize_TokenAndUrl()
+    {
+        var json = """{"type":"image","payload":{"photo_id":14463448907,"token":"token123","url":"https://i.oneme.ru/i?r=abc"}}""";
+
+        var attachment = MaxJsonSerializer.Deserialize<Attachment>(json);
+
+        attachment.Should().BeOfType<PhotoAttachment>();
+        var photo = (PhotoAttachment)attachment;
+        photo.Id.Should().Be(14463448907);
+        photo.FileId.Should().Be("token123");
+        photo.Url.Should().Be("https://i.oneme.ru/i?r=abc");
+    }
+
     // ==================== VIDEO ====================
 
     [Fact]
@@ -110,6 +124,20 @@ public class AttachmentFormatTests
         attachment.Should().BeOfType<AudioAttachment>();
         var audio = (AudioAttachment)attachment;
         audio.Id.Should().Be(789);
+    }
+
+    [Fact]
+    public void Audio_PayloadFormat_ShouldDeserialize_TokenAndUrl()
+    {
+        var json = """{"type":"audio","payload":{"token":"voice-token","url":"https://i.oneme.ru/a?r=abc","duration":13}}""";
+
+        var attachment = MaxJsonSerializer.Deserialize<Attachment>(json);
+
+        attachment.Should().BeOfType<AudioAttachment>();
+        var audio = (AudioAttachment)attachment;
+        audio.FileId.Should().Be("voice-token");
+        audio.Url.Should().Be("https://i.oneme.ru/a?r=abc");
+        audio.Duration.Should().Be(13);
     }
 
     // ==================== DOCUMENT ====================

@@ -32,6 +32,15 @@ public class CallbackQueryUpdate
     /// </summary>
     /// <value>The callback query in this update.</value>
     public CallbackQuery CallbackQuery { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the message that contains the callback keyboard.
+    /// </summary>
+    /// <remarks>
+    /// MAX webhook delivers message payload at update level for <c>message_callback</c>,
+    /// so consumers should read message from this property.
+    /// </remarks>
+    public Message? Message { get; set; }
 }
 
 

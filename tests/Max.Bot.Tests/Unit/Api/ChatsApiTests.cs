@@ -580,6 +580,53 @@ public class ChatsApiTests
         result[1].Id.Should().Be(200L);
     }
 
+    [Fact]
+    public async Task GetChatAdminsAsync_ShouldDeserialize_AllPermissionStrings_WhenApiReturnsShortNames()
+    {
+        // Arrange - API returns permissions as short strings: "view_stats", "edit", "delete", ...
+        var chatId = 123456L;
+
+        var responseJson = """
+            {
+              "members": [
+                {
+                  "user_id": 100,
+                  "is_admin": true,
+                  "permissions": ["view_stats","read_all_messages","edit_link","write","edit","add_remove_members","change_chat_info","delete","pin_message"]
+                }
+              ],
+              "marker": null
+            }
+            """;
+
+        _mockHttpClient
+            .Setup(x => x.SendAsyncRaw(
+                It.Is<MaxApiRequest>(req =>
+                    req.Method == HttpMethod.Get &&
+                    req.Endpoint == $"/chats/{chatId}/members/admins"),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(responseJson);
+
+        var chatsApi = new ChatsApi(_mockHttpClient.Object, _options);
+
+        // Act
+        var result = await chatsApi.GetChatAdminsAsync(chatId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().HaveCount(1);
+        result[0].Permissions.Should().NotBeNull();
+        result[0].Permissions!.Should().Contain(new[]
+        {
+            ChatAdminPermission.ViewStats,
+            ChatAdminPermission.EditLink,
+            ChatAdminPermission.Write,
+            ChatAdminPermission.Edit,
+            ChatAdminPermission.Delete,
+            ChatAdminPermission.PinMessage
+        });
+    }
+
     #endregion
 
     #region AddChatAdminAsync Tests

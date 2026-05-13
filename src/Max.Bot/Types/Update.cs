@@ -147,7 +147,8 @@ public class Update
                 UpdateId = UpdateId,
                 Timestamp = Timestamp,
                 UserLocale = UserLocale,
-                CallbackQuery = Callback
+                CallbackQuery = Callback,
+                Message = Message
             };
         }
     }

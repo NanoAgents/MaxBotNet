@@ -495,6 +495,54 @@ public class MessagesApiTests
         result.Duration.Should().Be(expectedVideo.Duration);
     }
 
+    [Fact]
+    public async Task GetVideoAsync_ShouldMapTokenUrlsAndThumbnail_WhenResponseUsesNewShape()
+    {
+        // Arrange
+        var videoToken = "video-token-123";
+        var responseJson = """
+            {
+              "ok": true,
+              "result": {
+                "token": "f9LHodD0",
+                "width": 720,
+                "height": 1280,
+                "duration": 6633,
+                "urls": {
+                  "mp4_720": "http://vd555.okcdn.ru/video.mp4"
+                },
+                "thumbnail": {
+                  "url": "https://pimg.mycdn.me/thumb.jpg"
+                }
+              }
+            }
+            """;
+
+        _mockHttpClient
+            .Setup(x => x.SendAsyncRaw(
+                It.Is<MaxApiRequest>(req =>
+                    req.Method == HttpMethod.Get &&
+                    req.Endpoint == $"/videos/{videoToken}"),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(responseJson);
+
+        var messagesApi = new MessagesApi(_mockHttpClient.Object, _options);
+
+        // Act
+        var result = await messagesApi.GetVideoAsync(videoToken);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Token.Should().Be("f9LHodD0");
+        result.Width.Should().Be(720);
+        result.Height.Should().Be(1280);
+        result.Duration.Should().Be(6633);
+        result.Urls.Should().NotBeNull();
+        result.Urls!["mp4_720"].Should().Be("http://vd555.okcdn.ru/video.mp4");
+        result.Thumbnail.Should().NotBeNull();
+        result.Thumbnail!.Url.Should().Be("https://pimg.mycdn.me/thumb.jpg");
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]
