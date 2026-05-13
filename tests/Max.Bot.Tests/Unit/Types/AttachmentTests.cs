@@ -241,6 +241,23 @@ public class AttachmentTests
     }
 
     [Fact]
+    public void ContactAttachment_WithNestedPayload_ShouldDeserializeContactData()
+    {
+        var json = """{"type":"contact","payload":{"vcf_info":"BEGIN:VCARD\nVERSION:3.0\nFN:John Doe\nTEL:+1234567890\nEND:VCARD","max_info":{"user_id":123,"first_name":"John","last_name":"Doe"}}}""";
+
+        var attachment = MaxJsonSerializer.Deserialize<Attachment>(json);
+
+        attachment.Should().BeOfType<ContactAttachment>();
+        var contact = (ContactAttachment)attachment;
+        contact.Type.Should().Be("contact");
+        contact.VcfInfo.Should().Contain("BEGIN:VCARD");
+        contact.MaxInfo.Should().NotBeNull();
+        contact.MaxInfo!.Id.Should().Be(123);
+        contact.PhoneNumber.Should().Be("+1234567890");
+        contact.FullName.Should().Be("John Doe");
+    }
+
+    [Fact]
     public void ContactAttachment_WithVcfPhoneNumber_ShouldExtractPhoneNumber()
     {
         var vcf = "BEGIN:VCARD\nVERSION:3.0\nFN:John Doe\nTEL:+1234567890\nEND:VCARD";

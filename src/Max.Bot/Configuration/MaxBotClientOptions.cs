@@ -68,9 +68,9 @@ public class MaxBotClientOptions
             throw new ArgumentException("BaseUrl must use HTTP or HTTPS scheme.", nameof(BaseUrl));
         }
 
-        if (Timeout <= TimeSpan.Zero)
+        if (Timeout <= TimeSpan.Zero && Timeout != System.Threading.Timeout.InfiniteTimeSpan)
         {
-            throw new ArgumentOutOfRangeException(nameof(Timeout), "Timeout must be greater than zero.");
+            throw new ArgumentOutOfRangeException(nameof(Timeout), "Timeout must be greater than zero or Timeout.InfiniteTimeSpan.");
         }
 
         if (RetryCount < 0)

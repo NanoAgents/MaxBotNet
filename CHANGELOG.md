@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Attachment payload parsing**: Исправлен разбор payload tokens для media attachments.
+- **Callback message wrapper**: `CallbackQueryUpdate.Message` теперь содержит root-level `message` из `message_callback`, чтобы обработчики могли получить `mid` исходного сообщения.
+- **Get updates deserialization**: `GetUpdatesResponse` теперь десериализуется direct-first, без лишнего wrapper-first пути для long polling payload.
+- **Inline OpenApp buttons**: `ButtonType.OpenApp` теперь сериализуется как `link`, а сам enum value помечен obsolete в пользу `ButtonType.Link`.
+- **Infinite timeouts**: `Timeout.InfiniteTimeSpan` теперь разрешён для execution timeouts в `MaxBotClientOptions.Timeout`, `UpdateHandlingOptions.HandlerTimeout` и `MaxWebhookOptions.HandlerTimeout`.
+- **Handler timeout validation**: `UpdateHandlingOptions.HandlerTimeout` теперь отклоняет значения больше диапазона `CancellationTokenSource.CancelAfter`, включая `TimeSpan.MaxValue`.
 - **MaxClient disposal contract**: `MaxClient` теперь явно реализует `IDisposable`, чтобы публичный `Dispose()` был частью контракта типа.
 
 ## [0.6.1-alpha] - 2026-04-28

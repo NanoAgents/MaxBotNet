@@ -13,6 +13,9 @@ namespace Max.Bot.Api;
 /// </summary>
 internal abstract class BaseApi
 {
+    private static readonly Type ResponseType = typeof(Response);
+    private static readonly Type GetUpdatesResponseType = typeof(GetUpdatesResponse);
+
     /// <summary>
     /// Gets the HTTP client for making API requests.
     /// </summary>
@@ -96,8 +99,10 @@ internal abstract class BaseApi
         MaxApiRequest request,
         CancellationToken cancellationToken = default)
     {
+        var responseType = typeof(T);
+
         // Special case: if T is Response (simple response without Result wrapper), deserialize directly
-        if (typeof(T) == typeof(Response))
+        if (responseType == ResponseType)
         {
             var simpleResponse = await HttpClient.SendAsync<Response>(request, cancellationToken).ConfigureAwait(false);
             if (simpleResponse == null)
@@ -123,6 +128,22 @@ internal abstract class BaseApi
                     "API request returned empty response body.",
                     null,
                     HttpStatusCode.BadRequest);
+            }
+
+            if (responseType == GetUpdatesResponseType)
+            {
+                try
+                {
+                    var updatesResponse = MaxJsonSerializer.Deserialize<GetUpdatesResponse>(responseBody);
+                    if (updatesResponse?.Updates != null)
+                    {
+                        return (T)(object)updatesResponse;
+                    }
+                }
+                catch (JsonException)
+                {
+                    // Response<T> format doesn't match, try wrapped deserialization
+                }
             }
 
             // Try deserializing as Response<T> first

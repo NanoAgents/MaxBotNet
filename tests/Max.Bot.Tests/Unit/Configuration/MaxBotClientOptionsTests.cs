@@ -83,6 +83,23 @@ public class MaxBotClientOptionsTests
     }
 
     [Fact]
+    public void MaxBotClientOptions_Validate_ShouldAllowInfiniteTimeout()
+    {
+        // Arrange
+        var options = new MaxBotClientOptions
+        {
+            BaseUrl = "https://api.max.ru/bot",
+            Timeout = Timeout.InfiniteTimeSpan
+        };
+
+        // Act
+        var act = () => options.Validate();
+
+        // Assert
+        act.Should().NotThrow();
+    }
+
+    [Fact]
     public void MaxBotClientOptions_Validate_ShouldThrow_WhenTimeoutIsZero()
     {
         // Arrange

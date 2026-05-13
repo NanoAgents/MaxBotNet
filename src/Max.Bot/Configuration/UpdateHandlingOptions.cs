@@ -49,9 +49,14 @@ public sealed class UpdateHandlingOptions
             throw new ArgumentOutOfRangeException(nameof(MaxDegreeOfParallelism), MaxDegreeOfParallelism, "MaxDegreeOfParallelism must be at least 1.");
         }
 
-        if (HandlerTimeout <= TimeSpan.Zero)
+        if (HandlerTimeout <= TimeSpan.Zero && HandlerTimeout != Timeout.InfiniteTimeSpan)
         {
-            throw new ArgumentOutOfRangeException(nameof(HandlerTimeout), HandlerTimeout, "HandlerTimeout must be greater than zero.");
+            throw new ArgumentOutOfRangeException(nameof(HandlerTimeout), HandlerTimeout, "HandlerTimeout must be greater than zero or Timeout.InfiniteTimeSpan.");
+        }
+
+        if (HandlerTimeout != Timeout.InfiniteTimeSpan && HandlerTimeout > TimeSpan.FromMilliseconds(int.MaxValue))
+        {
+            throw new ArgumentOutOfRangeException(nameof(HandlerTimeout), HandlerTimeout, "HandlerTimeout must be less than or equal to int.MaxValue milliseconds or Timeout.InfiniteTimeSpan.");
         }
 
         if (AllowedUsernames is null)

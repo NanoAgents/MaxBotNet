@@ -99,7 +99,7 @@ public class InlineKeyboardButtonJsonConverter : JsonConverter<InlineKeyboardBut
         writer.WriteStartObject();
 
         // Write type (required) - convert to snake_case to match API format
-        var typeString = ConvertToSnakeCase(value.Type.ToString());
+        var typeString = (int)value.Type == 5 ? "link" : ConvertToSnakeCase(value.Type.ToString());
         writer.WriteString("type", typeString);
 
         // Write text (required)

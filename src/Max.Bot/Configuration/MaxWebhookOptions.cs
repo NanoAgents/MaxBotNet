@@ -66,9 +66,9 @@ public sealed class MaxWebhookOptions
             throw new ArgumentOutOfRangeException(nameof(MaxBodySizeKilobytes), MaxBodySizeKilobytes, "MaxBodySizeKilobytes must be greater than zero.");
         }
 
-        if (HandlerTimeout <= TimeSpan.Zero)
+        if (HandlerTimeout <= TimeSpan.Zero && HandlerTimeout != Timeout.InfiniteTimeSpan)
         {
-            throw new ArgumentOutOfRangeException(nameof(HandlerTimeout), HandlerTimeout, "HandlerTimeout must be greater than zero.");
+            throw new ArgumentOutOfRangeException(nameof(HandlerTimeout), HandlerTimeout, "HandlerTimeout must be greater than zero or Timeout.InfiniteTimeSpan.");
         }
 
         if (string.IsNullOrWhiteSpace(SignatureHeaderName))

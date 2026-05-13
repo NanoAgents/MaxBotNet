@@ -119,6 +119,26 @@ public class InlineKeyboardButtonTests
     }
 
     [Fact]
+    public void InlineKeyboardButton_ShouldSerialize_OpenAppAsLink()
+    {
+        // Arrange
+        var button = new InlineKeyboardButton
+        {
+            Type = (ButtonType)5,
+            Text = "Open App",
+            Url = "https://example.com/app"
+        };
+
+        // Act
+        var json = MaxJsonSerializer.Serialize(button);
+
+        // Assert
+        json.Should().Contain("\"type\":\"link\"");
+        json.Should().Contain("\"url\":\"https://example.com/app\"");
+        json.Should().NotContain("\"type\":\"open_app\"");
+    }
+
+    [Fact]
     public void InlineKeyboardButton_ShouldAutoSetType_WhenUrlIsSet()
     {
         // Arrange

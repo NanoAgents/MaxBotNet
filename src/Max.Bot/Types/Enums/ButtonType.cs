@@ -36,6 +36,7 @@ public enum ButtonType
     /// <summary>
     /// Open app button - opens a mini application.
     /// </summary>
+    [Obsolete("MAX API currently accepts URL buttons as link. Use ButtonType.Link instead.")]
     OpenApp
 }
 

@@ -299,6 +299,37 @@ public class SubscriptionsApiTests
     }
 
     [Fact]
+    public async Task GetUpdatesAsync_ShouldPreferDirectGetUpdatesResponse()
+    {
+        // Arrange
+        var directJson = """
+        {
+          "updates": [],
+          "marker": 123,
+          "ok": true,
+          "result": {
+            "updates": [],
+            "marker": 999
+          }
+        }
+        """;
+
+        _mockHttpClient
+            .Setup(x => x.SendAsyncRaw(
+                It.IsAny<MaxApiRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(directJson);
+
+        var subscriptionsApi = new SubscriptionsApi(_mockHttpClient.Object, _options);
+
+        // Act
+        var result = await subscriptionsApi.GetUpdatesAsync(new GetUpdatesRequest());
+
+        // Assert
+        result.Marker.Should().Be(123);
+    }
+
+    [Fact]
     public async Task GetUpdatesAsync_ShouldThrowArgumentNullException_WhenRequestIsNull()
     {
         // Arrange

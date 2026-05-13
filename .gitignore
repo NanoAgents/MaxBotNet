@@ -409,4 +409,7 @@ test-script
 
 # Pi Coding Agent
 .pi/
+
+# Serena workspace
+.serena/
 nul
