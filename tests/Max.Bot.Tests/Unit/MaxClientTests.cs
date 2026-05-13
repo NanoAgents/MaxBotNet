@@ -10,6 +10,12 @@ namespace Max.Bot.Tests.Unit;
 public class MaxClientTests
 {
     [Fact]
+    public void MaxClient_ShouldImplementIDisposable()
+    {
+        typeof(IDisposable).IsAssignableFrom(typeof(MaxClient)).Should().BeTrue();
+    }
+
+    [Fact]
     public void MaxClient_ShouldInitialize_WithToken()
     {
         // Act

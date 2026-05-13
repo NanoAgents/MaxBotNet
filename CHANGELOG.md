@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2-alpha] - 2026-05-14
+
+### Added
+
+- **Chat admin permissions**: Добавлены недостающие значения `ChatAdminPermission` для актуального контракта MAX API.
+- **Video metadata**: Добавлены поля модели `Video` для расширенного media-контракта.
+
+### Changed
+
+- **Callback and media contracts**: Обновлены модели callback/message и media/video под актуальные payload-форматы MAX API.
+- **Contact attachments**: `ContactAttachment` теперь разбирается из `attachments[].payload.vcf_info`, `max_info` и `hash`.
+
+### Fixed
+
+- **Attachment payload parsing**: Исправлен разбор payload tokens для media attachments.
+- **MaxClient disposal contract**: `MaxClient` теперь явно реализует `IDisposable`, чтобы публичный `Dispose()` был частью контракта типа.
+
 ## [0.6.1-alpha] - 2026-04-28
 
 ### Breaking Changes
@@ -291,7 +308,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/NanoAgents/MaxBotNet/compare/v0.6.1-alpha...HEAD
+[Unreleased]: https://github.com/NanoAgents/MaxBotNet/compare/v0.6.2-alpha...HEAD
+[0.6.2-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.6.1-alpha...v0.6.2-alpha
 [0.6.1-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.5.6-alpha...v0.6.1-alpha
 [0.5.6-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.5.5-alpha...v0.5.6-alpha
 [0.5.5-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.5.4-alpha...v0.5.5-alpha

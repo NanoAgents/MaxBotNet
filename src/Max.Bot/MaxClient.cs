@@ -16,7 +16,7 @@ namespace Max.Bot;
 /// <summary>
 /// Main client for interacting with the Max Messenger Bot API.
 /// </summary>
-public class MaxClient : IMaxBotApi, IUpdatePipeline
+public class MaxClient : IMaxBotApi, IUpdatePipeline, IDisposable
 {
     private readonly IMaxHttpClient _apiClient;
     private readonly IMaxHttpClient _pollClient;

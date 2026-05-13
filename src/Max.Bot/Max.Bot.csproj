@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
 
     <PackageId>MaxMessenger.Bot</PackageId>
-    <Version>0.6.1-alpha</Version>
+    <Version>0.6.2-alpha</Version>
     <Authors>MaxBotNet Contributors</Authors>
     <Description>C# library for Max Messenger Bot API (.NET 10, .NET 9, .NET 8)</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
