@@ -23,17 +23,17 @@ public class UpdatePollerTests
             BaseUrl = "https://api.max.ru/bot"
         };
 
+        var updatesRequestSeen = new TaskCompletionSource<MaxApiRequest>(TaskCreationOptions.RunContinuationsAsynchronously);
         var pollClientMock = new Mock<IMaxHttpClient>();
         pollClientMock
             .Setup(x => x.SendAsyncRaw(
-                It.Is<MaxApiRequest>(req =>
-                    req.Method == HttpMethod.Get &&
-                    req.Endpoint == "/updates" &&
-                    req.Headers != null &&
-                    req.Headers.ContainsKey("Authorization") &&
-                    req.Headers["Authorization"] == "test-token-123"),
+                It.IsAny<MaxApiRequest>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync("{\"updates\":[],\"marker\":1}");
+            .Returns<MaxApiRequest, CancellationToken>((req, _) =>
+            {
+                updatesRequestSeen.TrySetResult(req);
+                return Task.FromResult("{\"updates\":[],\"marker\":1}");
+            });
 
         var subscriptionsApiMock = new Mock<ISubscriptionsApi>();
         var botApiMock = new Mock<IMaxBotApi>();
@@ -46,16 +46,13 @@ public class UpdatePollerTests
             pollClientMock.Object);
 
         await poller.StartAsync(handlerMock.Object, CancellationToken.None);
-        await Task.Delay(50);
+        var request = await updatesRequestSeen.Task.WaitAsync(TimeSpan.FromSeconds(5));
         await poller.StopAsync(CancellationToken.None);
 
-        pollClientMock.Verify(x => x.SendAsyncRaw(
-            It.Is<MaxApiRequest>(req =>
-                req.Method == HttpMethod.Get &&
-                req.Endpoint == "/updates" &&
-                req.Headers != null &&
-                req.Headers.ContainsKey("Authorization") &&
-                req.Headers["Authorization"] == "test-token-123"),
-            It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        request.Method.Should().Be(HttpMethod.Get);
+        request.Endpoint.Should().Be("/updates");
+        request.Headers.Should().NotBeNull();
+        request.Headers.Should().ContainKey("Authorization");
+        request.Headers!["Authorization"].Should().Be("test-token-123");
     }
 }
