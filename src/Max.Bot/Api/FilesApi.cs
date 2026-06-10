@@ -51,7 +51,7 @@ internal class FilesApi : BaseApi, IFilesApi
         {
             var content = new MultipartFormDataContent();
             var streamContent = new StreamContent(new NonDisposingStreamWrapper(fileStream));
-            streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+            streamContent.Headers.ContentType = new MediaTypeHeaderValue(MimeTypes.FromFileName(fileName) ?? "application/octet-stream");
             content.Add(streamContent, "data", fileName ?? "file");
             return content;
         }
@@ -86,7 +86,7 @@ internal class FilesApi : BaseApi, IFilesApi
             HttpContent CreateChunkContent()
             {
                 var content = new ByteArrayContent(chunkData);
-                content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                content.Headers.ContentType = new MediaTypeHeaderValue(MimeTypes.FromFileName(fileName) ?? "application/octet-stream");
                 // Always send Content-Range. If length unknown, use '*'
                 content.Headers.ContentRange = fileLength > 0
                     ? new ContentRangeHeaderValue(currentOffset, currentOffset + currentBytesRead - 1, fileLength)

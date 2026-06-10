@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.6.3-alpha] - 2026-06-08
+
+### Fixed
+
+- **Image/Video/Audio upload MIME type**: `UploadFileDataAsync` and `UploadFileResumableAsync` no longer hardcode `Content-Type: application/octet-stream`. The MIME type is now auto-detected from the file name extension (e.g. `image/jpeg` for `.jpg`) and falls back to `application/octet-stream` for unknown extensions. This fixes the `"Error reading file from request in direct mode"` error that occurred when uploading images to the `iu.oneme.ru` CDN, which requires a correct MIME type for validation.
+
+### Added
+
+- **MIME type helper**: `Max.Bot.Networking.MimeTypes` maps 18 common file extensions to `Content-Type` values for images, video, and audio.
+
+### Changed
+
+- **Format restrictions documented**: `IFilesApi.UploadFileAsync` XML docs now note that unsupported extensions (e.g. `.html`) return `"File extension is forbidden"` from the Max API, and list supported formats per upload type.
+
 
 ## [0.6.2-alpha] - 2026-05-14
 

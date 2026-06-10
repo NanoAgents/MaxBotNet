@@ -255,17 +255,105 @@ public class FilesApiTests
     public async Task UploadFileDataAsync_ShouldReturnFileUploadResult_WhenRequestSucceeds()
     {
         // Arrange
-        var responseJson = "{\"token\":\"test-token\",\"file_id\":12345}";
-        var mockResponse = new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent(responseJson)
-        };
+        var uploadUrl = "https://example.com/upload";
+        var expectedToken = "test-token-upload";
+        var responseJson = JsonSerializer.Serialize(new { token = expectedToken, file_id = 12345 });
 
-        // We need to use a real HttpClient or mock the SendAsync
-        // Since FilesApi creates its own HttpClient, we might need to adjust it for testing
-        // or rely on the IMaxHttpClient if it was used.
-        // Wait, FilesApi.cs: _httpClient = new HttpClient { ... };
-        // This makes it hard to test without reflection or a wrapper.
+        Func<HttpContent?>? capturedFactory = null;
+        _mockHttpClient
+            .Setup(x => x.SendAsyncRaw(
+                uploadUrl,
+                It.IsAny<Func<HttpContent?>>(),
+                It.IsAny<CancellationToken>(),
+                It.IsAny<HttpMethod?>()))
+            .Callback<string, Func<HttpContent?>?, CancellationToken, HttpMethod?>((_, factory, _, _) =>
+            {
+                capturedFactory = factory;
+            })
+            .ReturnsAsync(responseJson);
+
+        var filesApi = new FilesApi(_mockHttpClient.Object, _options);
+        using var stream = new MemoryStream([1, 2, 3]);
+
+        // Act
+        var result = await filesApi.UploadFileDataAsync(uploadUrl, stream, "photo.jpg");
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Token.Should().Be(expectedToken);
+
+        capturedFactory.Should().NotBeNull();
+        var content = capturedFactory!();
+        content.Should().NotBeNull();
+        var body = await content!.ReadAsStringAsync();
+        body.Should().Contain("Content-Type: image/jpeg");
+    }
+
+    [Fact]
+    public async Task UploadFileDataAsync_ShouldUseOctetStream_WhenExtensionUnknown()
+    {
+        // Arrange
+        var uploadUrl = "https://example.com/upload";
+        var responseJson = JsonSerializer.Serialize(new { token = "test-token" });
+
+        Func<HttpContent?>? capturedFactory = null;
+        _mockHttpClient
+            .Setup(x => x.SendAsyncRaw(
+                uploadUrl,
+                It.IsAny<Func<HttpContent?>>(),
+                It.IsAny<CancellationToken>(),
+                It.IsAny<HttpMethod?>()))
+            .Callback<string, Func<HttpContent?>?, CancellationToken, HttpMethod?>((_, factory, _, _) =>
+            {
+                capturedFactory = factory;
+            })
+            .ReturnsAsync(responseJson);
+
+        var filesApi = new FilesApi(_mockHttpClient.Object, _options);
+        using var stream = new MemoryStream([1, 2, 3]);
+
+        // Act
+        await filesApi.UploadFileDataAsync(uploadUrl, stream, "data.bin");
+
+        // Assert
+        capturedFactory.Should().NotBeNull();
+        var content = capturedFactory!();
+        content.Should().NotBeNull();
+        var body = await content!.ReadAsStringAsync();
+        body.Should().Contain("Content-Type: application/octet-stream");
+    }
+
+    [Fact]
+    public async Task UploadFileDataAsync_ShouldUseOctetStream_WhenFileNameNull()
+    {
+        // Arrange
+        var uploadUrl = "https://example.com/upload";
+        var responseJson = JsonSerializer.Serialize(new { token = "test-token" });
+
+        Func<HttpContent?>? capturedFactory = null;
+        _mockHttpClient
+            .Setup(x => x.SendAsyncRaw(
+                uploadUrl,
+                It.IsAny<Func<HttpContent?>>(),
+                It.IsAny<CancellationToken>(),
+                It.IsAny<HttpMethod?>()))
+            .Callback<string, Func<HttpContent?>?, CancellationToken, HttpMethod?>((_, factory, _, _) =>
+            {
+                capturedFactory = factory;
+            })
+            .ReturnsAsync(responseJson);
+
+        var filesApi = new FilesApi(_mockHttpClient.Object, _options);
+        using var stream = new MemoryStream([1, 2, 3]);
+
+        // Act
+        await filesApi.UploadFileDataAsync(uploadUrl, stream, null);
+
+        // Assert
+        capturedFactory.Should().NotBeNull();
+        var content = capturedFactory!();
+        content.Should().NotBeNull();
+        var body = await content!.ReadAsStringAsync();
+        body.Should().Contain("Content-Type: application/octet-stream");
     }
 }
-
