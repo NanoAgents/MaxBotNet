@@ -6,6 +6,50 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.7.0-alpha] - 2026-10-11
+
+Ревью всей библиотеки на соответствие MAX Bot API (схемы официального Go SDK `max-bot-api-client-go`) и исправление открытых issue.
+
+### Breaking Changes
+
+- **Webhook endpoint is opt-in** (#35): `WebhookController` стал `abstract`, поэтому подключение пакета больше не добавляет `POST /api/max/webhook` (и запись в Swagger) в каждое ASP.NET Core приложение. Подключайте эндпоинт явно через `app.MapMaxWebhook()` или унаследуйтесь от `WebhookController` с `[Route(...)]`.
+- **Webhook secret header**: `MaxWebhookOptions.SignatureHeaderName` по умолчанию теперь `X-Max-Bot-Api-Secret` — именно этот заголовок присылает MAX. Раньше при заданном `SecretToken` все реальные webhook-запросы отклонялись с 401.
+- **Callback answer body**: `NewMessageBody.Attachments` теперь `AttachmentRequest[]`, а `NewMessageBody.Link` — `NewMessageLink` (формат запроса `POST /answers`).
+- **AttachmentRequest**: `Payload` стал nullable (у `location` нет payload), добавлены `Latitude`/`Longitude`; атрибуты `[Required]` убраны.
+- **Typed updates**: `MessageRemovedUpdate.Message` и `MessageChatCreatedUpdate.Message` стали nullable — MAX присылает для этих событий идентификаторы, а не сообщение.
+
+### Added
+
+- **Upload helper** (#38): `IFilesApi.UploadAsync(type, stream, fileName)` делает `POST /uploads` + загрузку и возвращает готовый токен (для `image` — из `photos`, для `video`/`audio` — токен из `POST /uploads`).
+- **Attachment factories** (#15): `AttachmentRequest.ImageFromUrl`, `Image`, `Video`, `Audio`, `File`, `FromUpload`, `Sticker`, `Contact`, `Location`, `Share`, `Keyboard` и типизированные payload-классы.
+- **MapMaxWebhook** (#35): minimal-API эндпоинт `app.MapMaxWebhook(pattern)` с проверкой секрета и лимита размера тела.
+- **MaxAttachmentNotReadyException** (#22): отдельное исключение для ошибки `attachment.not.ready`.
+- **Messages pagination** (#18): `GetMessagesAsync(chatId, count, from, to)` и `GetMessagesByIdsAsync(messageIds)`.
+- **Chats pagination** (#23): `GetChatListAsync(count, marker)` возвращает `ChatListResponse` с `marker` следующей страницы.
+- **Chat info in updates** (#37): `Update.ChatId`, `Update.Chat` (частично: id и тип) и `Update.ChatType` заполняются из `message.recipient` для `message_created`, `message_edited` и `message_callback`.
+- **Update fields**: `message_id`, `user_id`, `admin_id`, `title`, `is_channel`, `muted_until`, `start_payload` и соответствующие свойства в типизированных обёртках (`MessageRemovedUpdate`, `UserRemovedUpdate`, `ChatTitleChangedUpdate`, `BotAddedUpdate` и др.).
+- **Attachments**: `StickerAttachment`, `ShareAttachment`; `Token` у фото/видео/аудио/файлов, `VideoAttachment.Thumbnail`, `AudioAttachment.Transcription`.
+- **Models**: `MessageBody.Markup`, `MessageStat.Views`, `Chat.MessagesCount`, `ChatStatus.Suspended`, `Subscription.Time`/`Version`, `ChatAdmin` для назначения администраторов.
+
+### Fixed
+
+- **Callback answers** (#34): `AnswerCallbackQueryAsync` передаёт `callback_id` вместо устаревшего `callback_query_id`.
+- **Image upload token** (#38): `FileUploadResult` снова содержит типизированные `Photos` и `FileId`, а `Token` заполняется из `photos`; XML-ответ CDN (`<retval>1</retval>`) больше не считается токеном.
+- **API error parsing** (#22): ошибки формата `{"code": "...", "message": "..."}` разбираются в `MaxApiException.ErrorCode`/`Message` вместо сырого JSON в тексте исключения.
+- **Attachment retry**: повтор отправки/редактирования выполняется только для `attachment.not.ready` (раньше повторялся любой `400 Bad Request`); добавлен повтор для `EditMessageAsync`.
+- **Get chats** (#23): `GetChatsAsync` корректно разбирает ответ `{"chats": [...], "marker": ...}` вместо исключения `The JSON value could not be converted to Max.Bot.Types.Chat[]`.
+- **Pinned message**: `GetPinnedMessageAsync` разбирает ответ `{"message": ...}` и возвращает `null`, если ничего не закреплено.
+- **Add chat admins**: `AddChatAdminRequest` сериализуется как `{"admins": [{"user_id", "permissions", "alias"}]}`.
+- **Incoming attachments** (#20, #21, #25): поля из `payload` и корня вложения объединяются — у файлов теперь заполняются `FileName`/`FileSize` (`filename`/`size`), у видео — размеры, длительность и превью.
+- **Long polling marker**: следующий запрос `GET /updates` использует `marker` из ответа. Раньше подставлялся `update_id`, которого нет в MAX API (всегда `0`).
+- **Webhook configuration** (#36): `ConfigureWebhookAsync()` и `DeleteWebhookAsync()` берут URL из `MaxWebhookOptions.Endpoint`, а секрет — из `MaxWebhookOptions.SecretToken`, если они не переданы явно.
+- **Upload retries**: при повторе `UploadFileDataAsync` поток перематывается в начало, чтобы не отправлять пустой файл.
+- **Unknown enum values**: неизвестные статусы чата и права администраторов больше не ломают десериализацию ответа.
+- **User-Agent**: заголовок содержит фактическую версию пакета вместо зашитой `0.5.1-alpha`.
+- **Build**: `Microsoft.SourceLink.GitHub` обновлён до `10.0.401` — версия `8.0.0` тянула уязвимый `Microsoft.Build.Tasks.Git` (GHSA-23fw-v26w-5fgq), из-за чего `dotnet restore` падал с `NU1902` при `TreatWarningsAsErrors`.
+- **Samples**: исправлена испорченная кодировка текстов в примерах; `FileBotSample` использует `UploadAsync`.
+
 ## [0.6.3-alpha] - 2026-06-08
 
 ### Fixed

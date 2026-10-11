@@ -80,15 +80,15 @@ public sealed class ContactBotSample : IBotSample
         var parsedFullName = ContactHelpers.GetFullName(contactAttachment);
 
         var response = $"""
-            РќРѕРІС‹Р№ РєРѕРЅС‚Р°РєС‚ РїРѕР»СѓС‡РµРЅ! РІСќСџС'С‘
+            Новый контакт получен! 📇
 
-            РўРµР»РµС„РѕРЅ: {phoneNumber ?? "РќРµ СѓРєР°Р·Р°РЅ"}
-            РРјСЏ: {fullName ?? "РќРµ СѓРєР°Р·Р°РЅРѕ"}
+            Телефон: {phoneNumber ?? "Не указан"}
+            Имя: {fullName ?? "Не указано"}
 
-            Р”РѕРїРѕР»РЅРёС‚РµР»СЊРЅР°СЏ РёРЅС„РѕСЂРјР°С†РёСЏ:
+            Дополнительная информация:
             - User ID: {maxInfo?.Id}
-            - Username: {maxInfo?.Username ?? "РќРµС‚"}
-            - Bot: {(maxInfo?.IsBot == true ? "Р”Р°" : "РќРµС‚")}
+            - Username: {maxInfo?.Username ?? "Нет"}
+            - Bot: {(maxInfo?.IsBot == true ? "Да" : "Нет")}
             """;
 
         await context.Api.Messages.SendMessageAsync(

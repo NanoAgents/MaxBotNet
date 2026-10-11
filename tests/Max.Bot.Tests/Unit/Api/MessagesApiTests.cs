@@ -586,8 +586,8 @@ public class MessagesApiTests
                     req.Method == HttpMethod.Post &&
                     req.Endpoint == "/answers" &&
                     req.QueryParameters != null &&
-                    req.QueryParameters.ContainsKey("callback_query_id") &&
-                    req.QueryParameters["callback_query_id"] == callbackQueryId &&
+                    req.QueryParameters.ContainsKey("callback_id") &&
+                    req.QueryParameters["callback_id"] == callbackQueryId &&
                     req.Body != null),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);

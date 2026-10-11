@@ -105,6 +105,7 @@ public class ChatMember
     /// Only populated if the member is an admin; otherwise null.
     /// </summary>
     [JsonPropertyName("permissions")]
+    [JsonConverter(typeof(Converters.LenientEnumArrayConverter<ChatAdminPermission>))]
     public ChatAdminPermission[]? Permissions { get; set; }
 
     /// <summary>

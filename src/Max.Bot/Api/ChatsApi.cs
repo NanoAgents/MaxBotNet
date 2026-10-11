@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net.Http;
+using System.Text.Json;
 using Max.Bot.Configuration;
 using Max.Bot.Networking;
 using Max.Bot.Types;
@@ -33,8 +35,34 @@ internal class ChatsApi : BaseApi, IChatsApi
     /// <inheritdoc />
     public async Task<Chat[]> GetChatsAsync(CancellationToken cancellationToken = default)
     {
-        var request = CreateRequest(HttpMethod.Get, "/chats");
-        return await ExecuteRequestAsync<Chat[]>(request, cancellationToken).ConfigureAwait(false);
+        var response = await GetChatListAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        return response.Chats ?? Array.Empty<Chat>();
+    }
+
+    /// <inheritdoc />
+    public async Task<ChatListResponse> GetChatListAsync(int? count = null, long? marker = null, CancellationToken cancellationToken = default)
+    {
+        if (count is < 1 or > 100)
+        {
+            throw new ArgumentOutOfRangeException(nameof(count), count, "Count must be between 1 and 100.");
+        }
+
+        var queryParams = new Dictionary<string, string?>();
+        if (count.HasValue)
+        {
+            queryParams["count"] = count.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        if (marker.HasValue)
+        {
+            queryParams["marker"] = marker.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        // * GET /chats returns {"chats":[...],"marker":...}
+        var request = CreateRequest(HttpMethod.Get, "/chats", null, queryParams.Count > 0 ? queryParams : null);
+        var response = await ExecuteRequestAsync<ChatListResponse>(request, cancellationToken).ConfigureAwait(false);
+        response.Chats ??= Array.Empty<Chat>();
+        return response;
     }
 
     /// <inheritdoc />
@@ -78,21 +106,41 @@ internal class ChatsApi : BaseApi, IChatsApi
     public async Task<Message?> GetPinnedMessageAsync(long chatId, CancellationToken cancellationToken = default)
     {
         var request = CreateRequest(HttpMethod.Get, $"/chats/{chatId}/pin");
-        var response = await HttpClient.SendAsync<Response<Message>>(request, cancellationToken).ConfigureAwait(false);
 
-        if (response == null || !response.Ok)
+        // * GET /chats/{chatId}/pin returns {"message": {...}} or {"message": null} when nothing is pinned.
+        var responseBody = await HttpClient.SendAsyncRaw(request, cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(responseBody))
         {
-            if (response != null && !response.Ok)
-            {
-                throw new Exceptions.MaxApiException(
-                    "API request failed. The response indicates an error.",
-                    null,
-                    System.Net.HttpStatusCode.BadRequest);
-            }
             return null;
         }
 
-        return response.Result;
+        try
+        {
+            using var document = JsonDocument.Parse(responseBody);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            // Legacy {"ok": true, "result": {...}} envelope.
+            if (root.TryGetProperty("result", out var result) && result.ValueKind == JsonValueKind.Object)
+            {
+                return result.Deserialize<Message>(MaxJsonSerializer.Options);
+            }
+
+            return root.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.Object
+                ? message.Deserialize<Message>(MaxJsonSerializer.Options)
+                : null;
+        }
+        catch (JsonException ex)
+        {
+            throw new Exceptions.MaxApiException(
+                $"Failed to parse pinned message response: {ex.Message}",
+                null,
+                System.Net.HttpStatusCode.BadRequest,
+                ex);
+        }
     }
 
     /// <inheritdoc />

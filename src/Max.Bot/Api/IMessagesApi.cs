@@ -85,6 +85,35 @@ public interface IMessagesApi
     Task<Message[]> GetMessagesAsync(long chatId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets a page of messages from the specified chat (<c>GET /messages</c>).
+    /// Messages are returned in reverse order: the latest message comes first.
+    /// </summary>
+    /// <param name="chatId">The unique identifier of the chat.</param>
+    /// <param name="count">Maximum number of messages to return (1-100). Defaults to 50 on the server side.</param>
+    /// <param name="from">Upper bound of the message timestamp (Unix time in milliseconds). Optional.</param>
+    /// <param name="to">Lower bound of the message timestamp (Unix time in milliseconds). Must be less than <paramref name="from"/>. Optional.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains an array of messages.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when count is outside 1..100.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxApiException">Thrown when the API returns an error response.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxNetworkException">Thrown when a network error occurs.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxUnauthorizedException">Thrown when authentication fails.</exception>
+    Task<Message[]> GetMessagesAsync(long chatId, int? count, long? from = null, long? to = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets messages by their identifiers (<c>GET /messages?message_ids=...</c>).
+    /// </summary>
+    /// <param name="messageIds">The message identifiers (<c>mid</c>) to load.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains an array of messages.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when messageIds is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when messageIds contains no identifiers.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxApiException">Thrown when the API returns an error response.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxNetworkException">Thrown when a network error occurs.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxUnauthorizedException">Thrown when authentication fails.</exception>
+    Task<Message[]> GetMessagesByIdsAsync(IEnumerable<string> messageIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Edits a message in the specified chat.
     /// </summary>
     /// <param name="messageId">The unique identifier of the message to edit.</param>
@@ -151,8 +180,8 @@ public interface IMessagesApi
     /// <summary>
     /// Answers a callback query from an inline keyboard button press.
     /// </summary>
-    /// <param name="callbackQueryId">The unique identifier of the callback query.</param>
-    /// <param name="request">The answer request containing message or notification.</param>
+    /// <param name="callbackQueryId">The callback identifier (<see cref="Types.CallbackQuery.CallbackId"/>), sent to MAX API as the <c>callback_id</c> query parameter.</param>
+    /// <param name="request">The answer request containing a new message body and/or a one-time notification.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the response with success status.</returns>
     /// <exception cref="ArgumentException">Thrown when callbackQueryId is null or empty.</exception>

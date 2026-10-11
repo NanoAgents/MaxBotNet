@@ -25,13 +25,14 @@ public abstract class Attachment
 public class PhotoAttachment : Attachment
 {
     /// <summary>
-    /// Gets or sets the unique identifier of the photo.
+    /// Gets or sets the unique identifier of the photo (<c>payload.photo_id</c>).
     /// </summary>
     [JsonPropertyName("id")]
     public long Id { get; set; }
 
     /// <summary>
     /// Gets or sets the file identifier of the photo.
+    /// For MAX API payloads this contains the same value as <see cref="Token"/> (kept for backward compatibility).
     /// </summary>
     [JsonPropertyName("file_id")]
     public string FileId { get; set; } = string.Empty;
@@ -61,6 +62,13 @@ public class PhotoAttachment : Attachment
     public string? Url { get; set; }
 
     /// <summary>
+    /// Gets or sets the attachment token. Use it to send the same media again
+    /// (for example with <see cref="Requests.AttachmentRequest.Image(string)"/>).
+    /// </summary>
+    [JsonPropertyName("token")]
+    public string? Token { get; set; }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="PhotoAttachment"/> class.
     /// </summary>
     public PhotoAttachment() => Type = AttachmentTypeNames.Image;
@@ -80,6 +88,7 @@ public class VideoAttachment : Attachment
 
     /// <summary>
     /// Gets or sets the file identifier of the video.
+    /// For MAX API payloads this contains the same value as <see cref="Token"/> (kept for backward compatibility).
     /// </summary>
     [JsonPropertyName("file_id")]
     public string FileId { get; set; } = string.Empty;
@@ -121,6 +130,19 @@ public class VideoAttachment : Attachment
     public string? Url { get; set; }
 
     /// <summary>
+    /// Gets or sets the attachment token. Use it to send the same media again
+    /// (for example with <see cref="Requests.AttachmentRequest.Video(string)"/>).
+    /// </summary>
+    [JsonPropertyName("token")]
+    public string? Token { get; set; }
+
+    /// <summary>
+    /// Gets or sets the video thumbnail.
+    /// </summary>
+    [JsonPropertyName("thumbnail")]
+    public VideoThumbnail? Thumbnail { get; set; }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="VideoAttachment"/> class.
     /// </summary>
     public VideoAttachment() => Type = AttachmentTypeNames.Video;
@@ -140,6 +162,7 @@ public class AudioAttachment : Attachment
 
     /// <summary>
     /// Gets or sets the file identifier of the audio file.
+    /// For MAX API payloads this contains the same value as <see cref="Token"/> (kept for backward compatibility).
     /// </summary>
     [JsonPropertyName("file_id")]
     public string FileId { get; set; } = string.Empty;
@@ -169,6 +192,19 @@ public class AudioAttachment : Attachment
     public string? Url { get; set; }
 
     /// <summary>
+    /// Gets or sets the attachment token. Use it to send the same media again
+    /// (for example with <see cref="Requests.AttachmentRequest.Audio(string)"/>).
+    /// </summary>
+    [JsonPropertyName("token")]
+    public string? Token { get; set; }
+
+    /// <summary>
+    /// Gets or sets the audio transcription, if MAX provides it.
+    /// </summary>
+    [JsonPropertyName("transcription")]
+    public string? Transcription { get; set; }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="AudioAttachment"/> class.
     /// </summary>
     public AudioAttachment() => Type = AttachmentTypeNames.Audio;
@@ -188,12 +224,13 @@ public class DocumentAttachment : Attachment
 
     /// <summary>
     /// Gets or sets the file identifier of the document.
+    /// For MAX API payloads this contains the same value as <see cref="Token"/> (kept for backward compatibility).
     /// </summary>
     [JsonPropertyName("file_id")]
     public string FileId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the name of the document file.
+    /// Gets or sets the name of the document file (<c>filename</c> in MAX API).
     /// </summary>
     [JsonPropertyName("file_name")]
     public string? FileName { get; set; }
@@ -215,6 +252,13 @@ public class DocumentAttachment : Attachment
     /// </summary>
     [JsonPropertyName("url")]
     public string? Url { get; set; }
+
+    /// <summary>
+    /// Gets or sets the attachment token. Use it to send the same media again
+    /// (for example with <see cref="Requests.AttachmentRequest.File(string)"/>).
+    /// </summary>
+    [JsonPropertyName("token")]
+    public string? Token { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DocumentAttachment"/> class.
@@ -313,6 +357,82 @@ public class InlineKeyboardAttachment : Attachment
     public InlineKeyboardAttachment() => Type = AttachmentTypeNames.InlineKeyboard;
 }
 
+/// <summary>
+/// Represents a sticker attachment.
+/// </summary>
+public class StickerAttachment : Attachment
+{
+    /// <summary>
+    /// Gets or sets the sticker image URL.
+    /// </summary>
+    [JsonPropertyName("url")]
+    public string? Url { get; set; }
+
+    /// <summary>
+    /// Gets or sets the sticker code. Use it with <see cref="Requests.AttachmentRequest.Sticker(string)"/> to send the same sticker.
+    /// </summary>
+    [JsonPropertyName("code")]
+    public string? Code { get; set; }
+
+    /// <summary>
+    /// Gets or sets the sticker width in pixels.
+    /// </summary>
+    [JsonPropertyName("width")]
+    public int? Width { get; set; }
+
+    /// <summary>
+    /// Gets or sets the sticker height in pixels.
+    /// </summary>
+    [JsonPropertyName("height")]
+    public int? Height { get; set; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StickerAttachment"/> class.
+    /// </summary>
+    public StickerAttachment() => Type = AttachmentTypeNames.Sticker;
+}
+
+/// <summary>
+/// Represents a link preview (share) attachment.
+/// </summary>
+public class ShareAttachment : Attachment
+{
+    /// <summary>
+    /// Gets or sets the shared URL.
+    /// </summary>
+    [JsonPropertyName("url")]
+    public string? Url { get; set; }
+
+    /// <summary>
+    /// Gets or sets the attachment token.
+    /// </summary>
+    [JsonPropertyName("token")]
+    public string? Token { get; set; }
+
+    /// <summary>
+    /// Gets or sets the link preview title.
+    /// </summary>
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
+
+    /// <summary>
+    /// Gets or sets the link preview description.
+    /// </summary>
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
+    /// <summary>
+    /// Gets or sets the link preview image URL.
+    /// </summary>
+    [JsonPropertyName("image_url")]
+    public string? ImageUrl { get; set; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ShareAttachment"/> class.
+    /// </summary>
+    public ShareAttachment() => Type = AttachmentTypeNames.Share;
+}
+
 internal static class AttachmentTypeNames
 {
     public const string Image = "image";
@@ -322,4 +442,6 @@ internal static class AttachmentTypeNames
     public const string InlineKeyboard = "inline_keyboard";
     public const string Location = "location";
     public const string Contact = "contact";
+    public const string Sticker = "sticker";
+    public const string Share = "share";
 }

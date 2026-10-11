@@ -187,8 +187,6 @@ public sealed class UpdatePoller : IAsyncDisposable
                 var response = await FetchUpdatesAsync(_marker, cancellationToken).ConfigureAwait(false);
                 _consecutiveErrors = 0;
 
-                long? lastProcessedUpdateId = null;
-
                 if (response.Updates?.Length > 0)
                 {
                     foreach (var update in response.Updates)
@@ -200,29 +198,27 @@ public sealed class UpdatePoller : IAsyncDisposable
 
                         if (!ShouldDispatch(update))
                         {
-                            lastProcessedUpdateId = update.UpdateId;
                             continue;
                         }
 
                         try
                         {
                             await DispatchAsync(update, cancellationToken).ConfigureAwait(false);
-                            lastProcessedUpdateId = update.UpdateId;
                         }
                         catch (Exception ex)
                         {
                             _logger?.LogError(ex, "Failed to dispatch update {UpdateId}. Skipping.", update.UpdateId);
-                            lastProcessedUpdateId = update.UpdateId;
                         }
                     }
 
+                    // * MAX updates carry no update_id: the next page is addressed only by the marker returned with the batch.
                     if (_options.Polling.PersistMarkers)
                     {
-                        _marker = lastProcessedUpdateId ?? response.Marker ?? _marker;
+                        _marker = response.Marker ?? _marker;
                     }
                     else
                     {
-                        _marker = lastProcessedUpdateId ?? response.Marker ?? _options.Polling.InitialMarker;
+                        _marker = response.Marker ?? _options.Polling.InitialMarker;
                     }
                 }
                 else

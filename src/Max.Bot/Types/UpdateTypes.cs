@@ -55,7 +55,22 @@ public class MessageRemovedUpdate
     /// <summary>
     /// Gets or sets the removed message.
     /// </summary>
-    public Message Message { get; set; } = null!;
+    public Message? Message { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier of the removed message (<c>message_id</c>).
+    /// </summary>
+    public string? MessageId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the chat identifier where the message was removed.
+    /// </summary>
+    public long? ChatId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier of the user who removed the message.
+    /// </summary>
+    public long? UserId { get; set; }
 }
 
 /// <summary>
@@ -90,6 +105,16 @@ public class BotAddedUpdate
     /// Gets or sets the ID of the user who invited the bot.
     /// </summary>
     public long? InviterId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier of the chat the bot was added to.
+    /// </summary>
+    public long? ChatId { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the bot was added to a channel.
+    /// </summary>
+    public bool? IsChannel { get; set; }
 }
 
 /// <summary>
@@ -119,6 +144,16 @@ public class BotRemovedUpdate
     /// Gets or sets the user (bot) that was removed.
     /// </summary>
     public User? User { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier of the chat the bot was removed from.
+    /// </summary>
+    public long? ChatId { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the bot was removed from a channel.
+    /// </summary>
+    public bool? IsChannel { get; set; }
 }
 
 /// <summary>
@@ -187,6 +222,11 @@ public class BotStoppedUpdate
     /// Gets or sets the user who stopped the bot.
     /// </summary>
     public User? User { get; set; }
+
+    /// <summary>
+    /// Gets or sets the user locale.
+    /// </summary>
+    public string? UserLocale { get; set; }
 }
 
 /// <summary>
@@ -221,6 +261,16 @@ public class UserAddedUpdate
     /// Gets or sets the ID of the user who invited the user.
     /// </summary>
     public long? InviterId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier of the chat the user was added to.
+    /// </summary>
+    public long? ChatId { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the user was added to a channel.
+    /// </summary>
+    public bool? IsChannel { get; set; }
 }
 
 /// <summary>
@@ -250,6 +300,21 @@ public class UserRemovedUpdate
     /// Gets or sets the user that was removed.
     /// </summary>
     public User? User { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier of the chat the user was removed from.
+    /// </summary>
+    public long? ChatId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier of the administrator who removed the user.
+    /// </summary>
+    public long? AdminId { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the user was removed from a channel.
+    /// </summary>
+    public bool? IsChannel { get; set; }
 }
 
 /// <summary>
@@ -279,6 +344,16 @@ public class ChatTitleChangedUpdate
     /// Gets or sets the user who changed the title.
     /// </summary>
     public User? User { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier of the chat whose title changed.
+    /// </summary>
+    public long? ChatId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the new chat title.
+    /// </summary>
+    public string? Title { get; set; }
 }
 
 /// <summary>
@@ -308,6 +383,21 @@ public class DialogMutedUpdate
     /// Gets or sets whether the dialog is muted.
     /// </summary>
     public bool? IsMuted { get; set; }
+
+    /// <summary>
+    /// Gets or sets the time (Unix milliseconds) until which the dialog is muted.
+    /// </summary>
+    public long? MutedUntil { get; set; }
+
+    /// <summary>
+    /// Gets or sets the user who muted the dialog.
+    /// </summary>
+    public User? User { get; set; }
+
+    /// <summary>
+    /// Gets or sets the user locale.
+    /// </summary>
+    public string? UserLocale { get; set; }
 }
 
 /// <summary>
@@ -337,6 +427,16 @@ public class DialogUnmutedUpdate
     /// Gets or sets whether the dialog is muted.
     /// </summary>
     public bool? IsMuted { get; set; }
+
+    /// <summary>
+    /// Gets or sets the user who unmuted the dialog.
+    /// </summary>
+    public User? User { get; set; }
+
+    /// <summary>
+    /// Gets or sets the user locale.
+    /// </summary>
+    public string? UserLocale { get; set; }
 }
 
 /// <summary>
@@ -361,6 +461,16 @@ public class DialogClearedUpdate
     /// Gets or sets the chat ID of the cleared dialog.
     /// </summary>
     public long? ChatId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the user who cleared the dialog.
+    /// </summary>
+    public User? User { get; set; }
+
+    /// <summary>
+    /// Gets or sets the user locale.
+    /// </summary>
+    public string? UserLocale { get; set; }
 }
 
 /// <summary>
@@ -385,6 +495,16 @@ public class DialogRemovedUpdate
     /// Gets or sets the chat ID of the removed dialog.
     /// </summary>
     public long? ChatId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the user who removed the dialog.
+    /// </summary>
+    public User? User { get; set; }
+
+    /// <summary>
+    /// Gets or sets the user locale.
+    /// </summary>
+    public string? UserLocale { get; set; }
 }
 
 /// <summary>
@@ -413,7 +533,22 @@ public class MessageChatCreatedUpdate
     /// <summary>
     /// Gets or sets the message that created the chat.
     /// </summary>
-    public Message Message { get; set; } = null!;
+    public Message? Message { get; set; }
+
+    /// <summary>
+    /// Gets or sets the created chat.
+    /// </summary>
+    public Chat? Chat { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier of the message where the button was clicked.
+    /// </summary>
+    public string? MessageId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the payload from the chat button (<c>start_payload</c>).
+    /// </summary>
+    public string? StartPayload { get; set; }
 }
 
 

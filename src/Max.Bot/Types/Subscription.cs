@@ -46,6 +46,18 @@ public class Subscription
     [JsonPropertyName("updated_at")]
     [JsonConverter(typeof(Converters.UnixTimestampJsonConverter))]
     public DateTime? UpdatedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Unix time (milliseconds) when the subscription was created, as returned by MAX API.
+    /// </summary>
+    [JsonPropertyName("time")]
+    public long? Time { get; set; }
+
+    /// <summary>
+    /// Gets or sets the API version of the subscription.
+    /// </summary>
+    [JsonPropertyName("version")]
+    public string? Version { get; set; }
 }
 
 

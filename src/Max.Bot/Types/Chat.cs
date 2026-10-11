@@ -35,6 +35,7 @@ public class Chat
     /// Possible values: "active", "removed", "left", "closed".
     /// </summary>
     [JsonPropertyName("status")]
+    [JsonConverter(typeof(Converters.LenientNullableEnumConverter<ChatStatus>))]
     public ChatStatus? Status { get; set; }
 
     /// <summary>
@@ -120,4 +121,10 @@ public class Chat
     /// </summary>
     [JsonPropertyName("pinned_message")]
     public Message? PinnedMessage { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of messages in the chat. Only for group chats and channels.
+    /// </summary>
+    [JsonPropertyName("messages_count")]
+    public long? MessagesCount { get; set; }
 }

@@ -1,8 +1,8 @@
 # Max.Bot — C# библиотека для Max Messenger Bot API
 
 [![.NET](https://img.shields.io/badge/.NET-10%20%7C%209%20%7C%208-purple.svg)](https://dotnet.microsoft.com/)
-[![NuGet](https://img.shields.io/badge/nuget-v0.6.1--alpha-blue)](https://www.nuget.org/packages/MaxMessenger.Bot)
-[![Build](https://img.shields.io/github/actions/workflow/status/MaxBotNet/MaxBotNet/ci.yml?label=CI)](https://github.com/MaxBotNet/MaxBotNet/actions)
+[![NuGet](https://img.shields.io/nuget/vpre/MaxMessenger.Bot)](https://www.nuget.org/packages/MaxMessenger.Bot)
+[![Build](https://img.shields.io/github/actions/workflow/status/NanoAgents/MaxBotNet/ci.yml?label=CI)](https://github.com/NanoAgents/MaxBotNet/actions)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 Полнофункциональная библиотека для работы с [Max Messenger Bot API](https://dev.max.ru/docs-api) на .NET 10, .NET 9 и .NET 8. Проект фокусируется на типобезопасности, удобстве интеграции и масштабируемости корпоративных ботов.
@@ -18,29 +18,93 @@
 ## ⚡ Быстрый старт
 
 ```powershell
-dotnet add package MaxMessenger.Bot
+dotnet add package MaxMessenger.Bot --prerelease
 ```
 
 ```csharp
 using Max.Bot;
 using Max.Bot.Configuration;
+using Max.Bot.Polling;
 using Max.Bot.Types.Enums;
 
-var client = new MaxClient(new MaxBotOptions
+using var client = new MaxClient(new MaxBotOptions
 {
-    Token = Environment.GetEnvironmentVariable("MAX_BOT_TOKEN")!,
-    DispatchAllowedUpdateTypes = new[] { UpdateType.Message }
+    Token = Environment.GetEnvironmentVariable("MAX_BOT_TOKEN")!
 });
 
 var me = await client.Bot.GetMeAsync();
 Console.WriteLine($"Hello from {me.Username}");
 
-await client.Messages.SendMessageAsync(
-    chatId: 1234567890,
-    text: "It works! ✅");
+var handler = new DelegatingUpdateHandler(
+    onMessage: async (context, ct) =>
+    {
+        var update = context.Update;
+        if (update.Type != UpdateType.MessageCreated || update.ChatId is not { } chatId)
+        {
+            return;
+        }
+
+        // update.ChatType: Dialog, Chat или Channel (берётся из message.recipient)
+        await context.Api.Messages.SendMessageAsync(chatId, $"Echo: {update.Message?.Text}", ct);
+    });
+
+await client.StartPollingAsync(handler);
+Console.ReadLine();
+await client.StopPollingAsync();
 ```
 
 ✅ Полноценные примеры (echo-бот, команды, кнопки, файлы, контакты) живут в `examples/Max.Bot.Examples` и доступны как `RunAsync()` сценарии.
+
+## 📎 Файлы и вложения
+
+```csharp
+using Max.Bot.Types.Requests;
+
+// Картинка по URL — MAX скачает её сам
+await client.Messages.SendMessageWithAttachmentAsync(
+    AttachmentRequest.ImageFromUrl("https://example.com/cat.jpg"), chatId: chatId, text: "Котик");
+
+// Загрузка файла: UploadAsync сам получит upload URL и токен (для image — из photos, для video/audio — из POST /uploads)
+await using var stream = File.OpenRead("report.pdf");
+var upload = await client.Files.UploadAsync(UploadType.File, stream, "report.pdf");
+await client.Messages.SendMessageWithAttachmentAsync(AttachmentRequest.FromUpload(UploadType.File, upload), chatId: chatId);
+```
+
+Также доступны `AttachmentRequest.Image(token)`, `Video`, `Audio`, `File`, `Sticker`, `Contact`, `Location`, `Share` и `Keyboard`.
+Если MAX ещё обрабатывает только что загруженный файл, API отвечает `attachment.not.ready`: отправка/редактирование сообщения
+повторяются автоматически, а при исчерпании попыток выбрасывается `MaxAttachmentNotReadyException`.
+
+## 🔘 Callback-кнопки
+
+```csharp
+var callback = update.Callback!;
+await client.Messages.AnswerCallbackQueryAsync(
+    callback.CallbackId!,
+    new AnswerCallbackQueryRequest { Notification = "Принято!" });
+```
+
+## 🌐 Webhook
+
+Библиотека больше не добавляет эндпоинт в приложение автоматически. Подключите его явно:
+
+```csharp
+builder.Services.AddSingleton(new MaxBotOptions
+{
+    Token = builder.Configuration["Max:Token"]!,
+    Webhook = { Endpoint = "https://bot.example.com/api/max/webhook", SecretToken = builder.Configuration["Max:WebhookSecret"] }
+});
+builder.Services.AddSingleton(sp => new MaxClient(sp.GetRequiredService<MaxBotOptions>()));
+builder.Services.AddSingleton<IUpdatePipeline>(sp => sp.GetRequiredService<MaxClient>());
+builder.Services.AddSingleton<IUpdateHandler, MyUpdateHandler>();
+
+var app = builder.Build();
+app.MapMaxWebhook(); // POST /api/max/webhook, проверяет заголовок X-Max-Bot-Api-Secret
+
+// URL и секрет берутся из MaxBotOptions.Webhook, если не переданы явно
+await app.Services.GetRequiredService<MaxClient>().ConfigureWebhookAsync();
+```
+
+Для MVC-проектов можно унаследоваться от абстрактного `WebhookController` и пометить наследника `[Route(...)]`.
 
 ## 🧠 Архитектурные ориентиры
 
@@ -52,7 +116,7 @@ await client.Messages.SendMessageAsync(
 ## 🧪 Тесты и качество
 
 - `dotnet build -warnaserror` — проверяет, что все публичные API имеют XML-доки.
-- `dotnet test` — 635+ модульных тестов, включая `DocumentationCoverageTests` и проверки сериализации.
+- `dotnet test` — 690+ модульных тестов, включая регрессионные тесты по issue и проверки сериализации на реальных ответах MAX API.
 - GitHub Actions workflow `.github/workflows/ci.yml` (Ubuntu + Windows) гоняет форматирование, `dotnet format analyzers`, покрытие (минимум 60 % линий, целимся в 85 %) и `dotnet pack`, загружая артефакты для ревью.
 - Smoke-тесты для примеров используют `LoopbackSampleRuntime` и проходят весь `SampleRegistry`, повторяя подход Telegram.Bot и VkNet к офлайн-интеграциям, чтобы код примеров и документация не расходились.
 - Фикстуры API (`tests/Max.Bot.Tests/Integration/Fixtures`) помогают детерминированно воспроизводить ответы `/subscriptions` и `/updates` без реального HTTP.
@@ -68,7 +132,7 @@ await client.Messages.SendMessageAsync(
 ## 📚 Документация
 
 - Автогенерируемый XML-файл: `src/Max.Bot/bin/Debug/<target-framework>/Max.Bot.xml` (включён в NuGet).
-- Официальный Max Messenger API: [dev.max.ru/docs-api](https://dev.max.ru/docs-api) (локальная копия — `docs/max-api-docs/`).
+- Официальный Max Messenger API: [dev.max.ru/docs-api](https://dev.max.ru/docs-api).
 - Другие реализации для сравнения и проверки совместимости:
   - TypeScript — [max-bot-api-client-ts](https://github.com/max-messenger/max-bot-api-client-ts)
   - Go — [max-bot-api-client-go](https://github.com/max-messenger/max-bot-api-client-go)
@@ -98,7 +162,7 @@ await client.Messages.SendMessageAsync(
 1. Установите .NET 10 SDK или SDK целевого TFM (`net10.0`, `net9.0`, `net8.0`).
 2. В проекте выполните:
    ```powershell
-   dotnet add package MaxMessenger.Bot
+   dotnet add package MaxMessenger.Bot --prerelease
    ```
 3. Создайте `MaxClient` вручную или зарегистрируйте через DI (например, в ASP.NET Core).
 4. Токен и webhook URL держите в Secret Manager/Key Vault. Добавьте `.env`/секретные файлы в `.gitignore`.
@@ -129,6 +193,6 @@ Apache License 2.0 — см. [LICENSE](LICENSE).
 
 ---
 
-**Версия:** 0.6.2-alpha  
+**Версия:** 0.7.0-alpha  
 **Статус:** Активная разработка  
 **Контакты:** issues/PR в репозитории

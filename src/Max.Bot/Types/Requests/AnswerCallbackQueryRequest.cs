@@ -43,18 +43,18 @@ public class NewMessageBody
     /// Gets or sets the attachments for the message.
     /// </summary>
     /// <value>
-    /// The attachments array. If null, existing attachments are not changed.
+    /// The attachments array (see <see cref="AttachmentRequest"/> factory methods). If null, existing attachments are not changed.
     /// If empty array, all attachments will be removed.
     /// </value>
     [JsonPropertyName("attachments")]
-    public Attachment[]? Attachments { get; set; }
+    public AttachmentRequest[]? Attachments { get; set; }
 
     /// <summary>
     /// Gets or sets the link to a message (forwarded or reply).
     /// </summary>
     /// <value>The linked message, or null if not applicable.</value>
     [JsonPropertyName("link")]
-    public Message? Link { get; set; }
+    public NewMessageLink? Link { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether to notify chat participants.

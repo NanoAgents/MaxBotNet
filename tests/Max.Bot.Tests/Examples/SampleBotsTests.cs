@@ -110,9 +110,7 @@ public class SampleBotsTests
                 using var tempFile = new TempFile();
                 await File.WriteAllTextAsync(tempFile.Path, "payload");
 
-                harness.FilesMock.Setup(f => f.UploadFileAsync(UploadType.File, It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new UploadResponse { Url = "https://upload" });
-                harness.FilesMock.Setup(f => f.UploadFileDataAsync("https://upload", It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                harness.FilesMock.Setup(f => f.UploadAsync(UploadType.File, It.IsAny<Stream>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new FileUploadResult { Token = "file-token" });
 
                 harness.MessagesMock.Setup(m => m.SendMessageWithAttachmentAsync(It.IsAny<AttachmentRequest>(), It.IsAny<long?>(), It.IsAny<long?>(), It.IsAny<string?>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<TextFormat?>(), It.IsAny<CancellationToken>()))
@@ -123,9 +121,8 @@ public class SampleBotsTests
                 var handler = await harness.StartAsync();
                 await handler.HandleMessageAsync(CreateUpdateContext(harness.Api, CreateMessageUpdate("/file")), CancellationToken.None);
 
-                harness.FilesMock.Verify(f => f.UploadFileAsync(UploadType.File, It.IsAny<CancellationToken>()), Times.Once);
-                harness.FilesMock.Verify(f => f.UploadFileDataAsync("https://upload", It.IsAny<Stream>(), Path.GetFileName(tempFile.Path), It.IsAny<CancellationToken>()), Times.Once);
-                harness.MessagesMock.Verify(m => m.SendMessageWithAttachmentAsync(It.IsAny<AttachmentRequest>(), 1337, null, It.IsAny<string?>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<TextFormat?>(), It.IsAny<CancellationToken>()), Times.Once);
+                harness.FilesMock.Verify(f => f.UploadAsync(UploadType.File, It.IsAny<Stream>(), Path.GetFileName(tempFile.Path), It.IsAny<CancellationToken>()), Times.Once);
+                harness.MessagesMock.Verify(m => m.SendMessageWithAttachmentAsync(It.Is<AttachmentRequest>(a => a.Type == "file"), 1337, null, It.IsAny<string?>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<TextFormat?>(), It.IsAny<CancellationToken>()), Times.Once);
             })
         };
     }

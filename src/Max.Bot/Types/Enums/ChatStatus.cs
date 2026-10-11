@@ -26,6 +26,11 @@ public enum ChatStatus
     /// <summary>
     /// Chat was closed.
     /// </summary>
-    Closed
+    Closed,
+
+    /// <summary>
+    /// Chat was suspended.
+    /// </summary>
+    Suspended
 }
 

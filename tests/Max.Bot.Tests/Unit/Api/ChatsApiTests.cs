@@ -80,10 +80,11 @@ public class ChatsApiTests
             new Chat { ChatId = 2, Type = ChatType.Chat }
         };
 
-        var response = new Response<Chat[]>
+        // * GET /chats returns {"chats":[...],"marker":...}
+        var response = new ChatListResponse
         {
-            Ok = true,
-            Result = expectedChats
+            Chats = expectedChats,
+            Marker = 100
         };
 
         var responseJson = MaxJsonSerializer.Serialize(response);
@@ -340,19 +341,16 @@ public class ChatsApiTests
             Body = new MessageBody { Mid = "mid.789", Text = "Pinned message" }
         };
 
-        var response = new Response<Message>
-        {
-            Ok = true,
-            Result = expectedMessage
-        };
+        // * GET /chats/{chatId}/pin returns {"message":{...}}
+        var responseJson = MaxJsonSerializer.Serialize(new MessageResponse { Message = expectedMessage });
 
         _mockHttpClient
-            .Setup(x => x.SendAsync<Response<Message>>(
+            .Setup(x => x.SendAsyncRaw(
                 It.Is<MaxApiRequest>(req =>
                     req.Method == HttpMethod.Get &&
                     req.Endpoint == $"/chats/{chatId}/pin"),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
+            .ReturnsAsync(responseJson);
 
         var chatsApi = new ChatsApi(_mockHttpClient.Object, _options);
 
@@ -371,19 +369,13 @@ public class ChatsApiTests
         // Arrange
         var chatId = 123456L;
 
-        var response = new Response<Message>
-        {
-            Ok = true,
-            Result = null
-        };
-
         _mockHttpClient
-            .Setup(x => x.SendAsync<Response<Message>>(
+            .Setup(x => x.SendAsyncRaw(
                 It.Is<MaxApiRequest>(req =>
                     req.Method == HttpMethod.Get &&
                     req.Endpoint == $"/chats/{chatId}/pin"),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
+            .ReturnsAsync("""{"message":null}""");
 
         var chatsApi = new ChatsApi(_mockHttpClient.Object, _options);
 

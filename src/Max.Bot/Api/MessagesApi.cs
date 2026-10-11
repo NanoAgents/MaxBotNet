@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using Max.Bot.Configuration;
@@ -13,6 +14,10 @@ namespace Max.Bot.Api;
 /// </summary>
 internal class MessagesApi : BaseApi, IMessagesApi
 {
+    private const int AttachmentRetryCount = 5;
+
+    private static readonly TimeSpan AttachmentRetryInitialDelay = TimeSpan.FromMilliseconds(500);
+
     /// <summary>
     /// Initializes a new instance of the <see cref="MessagesApi"/> class.
     /// </summary>
@@ -37,7 +42,7 @@ internal class MessagesApi : BaseApi, IMessagesApi
 
         var queryParams = new Dictionary<string, string?>
         {
-            { "chat_id", chatId.ToString() }
+            { "chat_id", chatId.ToString(CultureInfo.InvariantCulture) }
         };
 
         var request = CreateRequest(HttpMethod.Post, "/messages", sendRequest, queryParams);
@@ -77,7 +82,7 @@ internal class MessagesApi : BaseApi, IMessagesApi
 
         var queryParams = new Dictionary<string, string?>
         {
-            { "chat_id", chatId.ToString() }
+            { "chat_id", chatId.ToString(CultureInfo.InvariantCulture) }
         };
 
         if (disableLinkPreview.HasValue)
@@ -177,16 +182,67 @@ internal class MessagesApi : BaseApi, IMessagesApi
     }
 
     /// <inheritdoc />
-    public async Task<Message[]> GetMessagesAsync(long chatId, CancellationToken cancellationToken = default)
+    public Task<Message[]> GetMessagesAsync(long chatId, CancellationToken cancellationToken = default)
     {
+        return GetMessagesAsync(chatId, count: null, from: null, to: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<Message[]> GetMessagesAsync(long chatId, int? count, long? from = null, long? to = null, CancellationToken cancellationToken = default)
+    {
+        if (count is < 1 or > 100)
+        {
+            throw new ArgumentOutOfRangeException(nameof(count), count, "Count must be between 1 and 100.");
+        }
+
         var queryParams = new Dictionary<string, string?>
         {
-            { "chat_id", chatId.ToString() }
+            { "chat_id", chatId.ToString(CultureInfo.InvariantCulture) }
         };
 
+        if (from.HasValue)
+        {
+            queryParams["from"] = from.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        if (to.HasValue)
+        {
+            queryParams["to"] = to.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        if (count.HasValue)
+        {
+            queryParams["count"] = count.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        return await GetMessagesCoreAsync(queryParams, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<Message[]> GetMessagesByIdsAsync(IEnumerable<string> messageIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(messageIds);
+
+        var ids = messageIds.Where(id => !string.IsNullOrWhiteSpace(id)).ToArray();
+        if (ids.Length == 0)
+        {
+            throw new ArgumentException("At least one message ID must be provided.", nameof(messageIds));
+        }
+
+        var queryParams = new Dictionary<string, string?>
+        {
+            { "message_ids", string.Join(",", ids) }
+        };
+
+        return await GetMessagesCoreAsync(queryParams, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<Message[]> GetMessagesCoreAsync(Dictionary<string, string?> queryParams, CancellationToken cancellationToken)
+    {
+        // * GET /messages returns {"messages":[...]}
         var request = CreateRequest(HttpMethod.Get, "/messages", null, queryParams);
         var response = await ExecuteRequestAsync<GetMessagesResponse>(request, cancellationToken).ConfigureAwait(false);
-        return response.Messages;
+        return response.Messages ?? Array.Empty<Message>();
     }
 
     /// <inheritdoc />
@@ -204,8 +260,15 @@ internal class MessagesApi : BaseApi, IMessagesApi
             { "message_id", messageId }
         };
 
-        var apiRequest = CreateRequest(HttpMethod.Put, "/messages", request, queryParams);
-        return await ExecuteRequestAsync<Response>(apiRequest, cancellationToken).ConfigureAwait(false);
+        var hasAttachments = request.Attachments is { Length: > 0 };
+        return await ExecuteWithAttachmentRetryAsync(
+            hasAttachments,
+            () =>
+            {
+                var apiRequest = CreateRequest(HttpMethod.Put, "/messages", request, queryParams);
+                return ExecuteRequestAsync<Response>(apiRequest, cancellationToken);
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -277,9 +340,10 @@ internal class MessagesApi : BaseApi, IMessagesApi
 
         ArgumentNullException.ThrowIfNull(request);
 
+        // * POST /answers expects the callback identifier in the "callback_id" query parameter.
         var queryParams = new Dictionary<string, string?>
         {
-            { "callback_query_id", callbackQueryId }
+            { "callback_id", callbackQueryId }
         };
 
         var apiRequest = CreateRequest(HttpMethod.Post, "/answers", request, queryParams);
@@ -447,23 +511,38 @@ internal class MessagesApi : BaseApi, IMessagesApi
         return await SendMessageAsync(request, chatId, userId, disableLinkPreview, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<Message> SendMessageWithAttachmentRetryAsync(
+    private Task<Message> SendMessageWithAttachmentRetryAsync(
         SendMessageRequest request,
         long? chatId,
         long? userId,
         bool? disableLinkPreview,
         CancellationToken cancellationToken)
     {
-        const int retryCount = 3;
-        var delay = TimeSpan.FromMilliseconds(500);
+        var hasAttachments = request.Attachments is { Length: > 0 };
+        return ExecuteWithAttachmentRetryAsync(
+            hasAttachments,
+            () => SendMessageAsync(request, chatId, userId, disableLinkPreview, cancellationToken),
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Executes a send/edit operation and retries it with exponential backoff while MAX API reports
+    /// that a freshly uploaded attachment is still being processed (<c>attachment.not.ready</c>).
+    /// </summary>
+    private static async Task<T> ExecuteWithAttachmentRetryAsync<T>(
+        bool hasAttachments,
+        Func<Task<T>> operation,
+        CancellationToken cancellationToken)
+    {
+        var delay = AttachmentRetryInitialDelay;
 
         for (var attempt = 0; ; attempt++)
         {
             try
             {
-                return await SendMessageAsync(request, chatId, userId, disableLinkPreview, cancellationToken).ConfigureAwait(false);
+                return await operation().ConfigureAwait(false);
             }
-            catch (Exceptions.MaxApiException ex) when (ex.HttpStatusCode == HttpStatusCode.BadRequest && attempt < retryCount)
+            catch (Exceptions.MaxApiException ex) when (hasAttachments && attempt < AttachmentRetryCount && IsAttachmentNotReady(ex))
             {
                 await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
                 delay = TimeSpan.FromMilliseconds(delay.TotalMilliseconds * 2);
@@ -471,24 +550,31 @@ internal class MessagesApi : BaseApi, IMessagesApi
         }
     }
 
-    private static AttachmentRequest CreateInlineKeyboardAttachment(InlineKeyboard keyboard)
+    internal static bool IsAttachmentNotReady(Exceptions.MaxApiException exception)
     {
-        ArgumentNullException.ThrowIfNull(keyboard);
-
-        var sourceRows = keyboard.Buttons ?? Array.Empty<InlineKeyboardButton[]>();
-        var normalizedRows = new InlineKeyboardButton[sourceRows.Length][];
-        for (var i = 0; i < sourceRows.Length; i++)
+        if (exception is Exceptions.MaxAttachmentNotReadyException)
         {
-            normalizedRows[i] = sourceRows[i] ?? Array.Empty<InlineKeyboardButton>();
+            return true;
         }
 
-        var payloadKeyboard = new InlineKeyboard(normalizedRows);
-
-        return new AttachmentRequest
+        if (exception.HttpStatusCode != HttpStatusCode.BadRequest)
         {
-            Type = AttachmentTypeNames.InlineKeyboard,
-            Payload = payloadKeyboard
-        };
+            return false;
+        }
+
+        if (Exceptions.MaxAttachmentNotReadyException.IsAttachmentNotReadyCode(exception.ErrorCode))
+        {
+            return true;
+        }
+
+        var message = exception.Message;
+        return message.Contains("attachment.not.ready", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("not.processed", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("not ready", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static AttachmentRequest CreateInlineKeyboardAttachment(InlineKeyboard keyboard)
+    {
+        return AttachmentRequest.Keyboard(keyboard);
+    }
 }

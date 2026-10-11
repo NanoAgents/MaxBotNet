@@ -54,7 +54,7 @@ public sealed class FileBotSample : IBotSample
         await context.Api.Messages.SendMessageWithAttachmentAsync(
             attachment,
             chatId: chatId.Value,
-            text: "Here is your file upload СЂСџвЂњР‹",
+            text: "Here is your file upload 📎",
             cancellationToken: cancellationToken).ConfigureAwait(false);
         sampleContext.Output.WriteLine($"File '{sampleContext.Settings.UploadFilePath}' uploaded for chat {chatId.Value}.");
     }
@@ -62,18 +62,15 @@ public sealed class FileBotSample : IBotSample
     private static async Task<AttachmentRequest> BuildAttachmentAsync(UpdateContext context, string filePath, CancellationToken cancellationToken)
     {
         await using var stream = File.OpenRead(filePath);
-        var uploadResponse = await context.Api.Files.UploadFileAsync(UploadType.File, cancellationToken).ConfigureAwait(false);
-        var payload = await context.Api.Files.UploadFileDataAsync(
-            uploadResponse.Url,
+
+        // UploadAsync requests an upload URL, sends the data and resolves the attachment token.
+        var upload = await context.Api.Files.UploadAsync(
+            UploadType.File,
             stream,
             Path.GetFileName(filePath),
             cancellationToken).ConfigureAwait(false);
 
-        return new AttachmentRequest
-        {
-            Type = "file",
-            Payload = payload
-        };
+        return AttachmentRequest.FromUpload(UploadType.File, upload);
     }
 }
 

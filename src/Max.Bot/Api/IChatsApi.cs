@@ -21,7 +21,8 @@ public interface IChatsApi
     Task<Chat> GetChatAsync(long chatId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a list of all chats for the bot.
+    /// Gets the first page of group chats and channels the bot participates in (<c>GET /chats</c>).
+    /// Use <see cref="GetChatListAsync"/> to paginate with <c>count</c> and <c>marker</c>.
     /// </summary>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains an array of chats.</returns>
@@ -29,6 +30,19 @@ public interface IChatsApi
     /// <exception cref="Max.Bot.Exceptions.MaxNetworkException">Thrown when a network error occurs.</exception>
     /// <exception cref="Max.Bot.Exceptions.MaxUnauthorizedException">Thrown when authentication fails.</exception>
     Task<Chat[]> GetChatsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets a page of group chats and channels the bot participates in (<c>GET /chats</c>).
+    /// </summary>
+    /// <param name="count">Number of chats to return (1-100). Defaults to 50 on the server side.</param>
+    /// <param name="marker">Marker of the page to return, taken from <see cref="ChatListResponse.Marker"/> of the previous page. Optional.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the chats and the next page marker.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when count is outside 1..100.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxApiException">Thrown when the API returns an error response.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxNetworkException">Thrown when a network error occurs.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxUnauthorizedException">Thrown when authentication fails.</exception>
+    Task<ChatListResponse> GetChatListAsync(int? count = null, long? marker = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets information about a chat by its public link or username.

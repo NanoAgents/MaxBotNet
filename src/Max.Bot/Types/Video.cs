@@ -104,5 +104,17 @@ public class VideoThumbnail
     /// </summary>
     [JsonPropertyName("url")]
     public string? Url { get; set; }
+
+    /// <summary>
+    /// Gets or sets the thumbnail photo identifier.
+    /// </summary>
+    [JsonPropertyName("photo_id")]
+    public long? PhotoId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the thumbnail token.
+    /// </summary>
+    [JsonPropertyName("token")]
+    public string? Token { get; set; }
 }
 

@@ -78,7 +78,7 @@ public sealed class CommandBotSample : IBotSample
 
         await context.Api.Messages.SendMessageAsync(
             chatId.Value,
-            "СЂСџвЂвЂ№ Welcome! Use /help to discover available commands.",
+            "👋 Welcome! Use /help to discover available commands.",
             cancellationToken).ConfigureAwait(false);
     }
 

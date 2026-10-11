@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Max.Bot.Configuration;
@@ -23,6 +24,11 @@ public class MaxHttpClient : IMaxHttpClient
     private readonly HttpClient _httpClient;
     private readonly MaxBotClientOptions _options;
     private readonly ILogger<MaxHttpClient>? _logger;
+
+    /// <summary>
+    /// Gets the User-Agent header value sent with every API request (MAX API requires it).
+    /// </summary>
+    internal static string UserAgent { get; } = BuildUserAgent();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MaxHttpClient"/> class.
@@ -156,19 +162,7 @@ public class MaxHttpClient : IMaxHttpClient
             {
                 using var httpRequest = new HttpRequestMessage(requestMethod, absoluteUrl);
 
-                // Max API requires Authorization header even for upload URLs (often)
-                // We extract it from DefaultRequestHeaders if it was set there, or rely on options
-                // In our implementation, we don't store token in DefaultRequestHeaders, we add it per request.
-                // But wait, the token is in MaxBotOptions. 
-                // Let's ensure the token is passed. Since MaxHttpClient doesn't have MaxBotOptions (only client options),
-                // we assume the token is already managed. 
-                // Correction: In MaxClient, we pass token via MaxApiRequest. 
-                // For absolute URLs, we should probably have the token accessible.
-
-                // For now, let's assume if the user didn't provide a token in the URL, they might need the header.
-                // However, without access to the token here, we can't add it.
-                // Let's check where the token is stored. It's in MaxBotOptions.
-
+                // Upload URLs returned by POST /uploads are pre-signed, so no Authorization header is needed.
                 if (contentFactory != null)
                 {
                     httpRequest.Content = contentFactory();
@@ -233,7 +227,7 @@ public class MaxHttpClient : IMaxHttpClient
         var httpRequest = new HttpRequestMessage(request.Method, url);
 
         // MAX API requires User-Agent header (same as Go reference client)
-        httpRequest.Headers.TryAddWithoutValidation("User-Agent", "MaxMessenger.Bot/0.5.1-alpha");
+        httpRequest.Headers.TryAddWithoutValidation("User-Agent", UserAgent);
 
         if (request.Headers != null)
         {
@@ -257,22 +251,7 @@ public class MaxHttpClient : IMaxHttpClient
 
     private void HandleHttpResponseError(HttpResponseMessage response, string? responseBody)
     {
-        string? errorMessage = null;
-        string? errorCode = null;
-
-        if (!string.IsNullOrWhiteSpace(responseBody))
-        {
-            try
-            {
-                var errorResponse = MaxJsonSerializer.Deserialize<ErrorResponse>(responseBody);
-                if (errorResponse?.Error != null)
-                {
-                    errorMessage = errorResponse.Error.Message;
-                    errorCode = errorResponse.Error.Code;
-                }
-            }
-            catch { /* Not a standard ErrorResponse */ }
-        }
+        var (errorCode, errorMessage) = ParseErrorBody(responseBody);
 
         errorMessage ??= string.IsNullOrWhiteSpace(responseBody)
             ? $"HTTP {(int)response.StatusCode} {response.ReasonPhrase}"
@@ -284,8 +263,62 @@ public class MaxHttpClient : IMaxHttpClient
             HttpStatusCode.TooManyRequests => new MaxRateLimitException(errorMessage, errorCode, response.StatusCode, GetRetryAfter(response)),
             HttpStatusCode.RequestTimeout => new MaxNetworkException(errorMessage, errorCode, response.StatusCode),
             _ when (int)response.StatusCode >= 500 => new MaxNetworkException(errorMessage, errorCode, response.StatusCode),
+            _ when MaxAttachmentNotReadyException.IsAttachmentNotReadyCode(errorCode) => new MaxAttachmentNotReadyException(errorMessage, errorCode, response.StatusCode),
             _ => new MaxApiException(errorMessage, errorCode, response.StatusCode),
         };
+    }
+
+    /// <summary>
+    /// Extracts the error code and message from an error response body.
+    /// MAX API returns errors as <c>{"code": "...", "message": "..."}</c>; the legacy
+    /// <c>{"ok": false, "error": {"code": "...", "message": "..."}}</c> envelope is still supported.
+    /// </summary>
+    internal static (string? Code, string? Message) ParseErrorBody(string? responseBody)
+    {
+        if (string.IsNullOrWhiteSpace(responseBody))
+        {
+            return (null, null);
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(responseBody);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object)
+            {
+                return (null, null);
+            }
+
+            if (root.TryGetProperty("error", out var errorElement) && errorElement.ValueKind == JsonValueKind.Object)
+            {
+                var nestedCode = GetString(errorElement, "code");
+                var nestedMessage = GetString(errorElement, "message");
+                if (nestedCode != null || nestedMessage != null)
+                {
+                    return (nestedCode, nestedMessage);
+                }
+            }
+
+            var code = GetString(root, "code");
+            var message = GetString(root, "message");
+            if (code == null && message == null && root.TryGetProperty("error", out var errorText) && errorText.ValueKind == JsonValueKind.String)
+            {
+                message = errorText.GetString();
+            }
+
+            return (code, message);
+        }
+        catch (JsonException)
+        {
+            return (null, null);
+        }
+
+        static string? GetString(JsonElement element, string propertyName)
+        {
+            return element.TryGetProperty(propertyName, out var value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
+        }
     }
 
     private TimeSpan? GetRetryAfter(HttpResponseMessage response)
@@ -318,6 +351,26 @@ public class MaxHttpClient : IMaxHttpClient
         var jitter = 0.8 + (new Random().NextDouble() * 0.4);
         delay = TimeSpan.FromMilliseconds(delay.TotalMilliseconds * jitter);
         return delay > _options.MaxRetryDelay ? _options.MaxRetryDelay : delay;
+    }
+
+    private static string BuildUserAgent()
+    {
+        var assembly = typeof(MaxHttpClient).Assembly;
+        var version = assembly
+            .GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+            .OfType<System.Reflection.AssemblyInformationalVersionAttribute>()
+            .FirstOrDefault()?.InformationalVersion
+            ?? assembly.GetName().Version?.ToString()
+            ?? "0.0.0";
+
+        // Strip SourceLink commit metadata (e.g. "0.7.0-alpha+abc123").
+        var metadataIndex = version.IndexOf('+');
+        if (metadataIndex >= 0)
+        {
+            version = version[..metadataIndex];
+        }
+
+        return $"MaxMessenger.Bot/{version}";
     }
 
     /// <summary>
