@@ -38,12 +38,35 @@ public interface IFilesApi
     /// <param name="fileStream">The stream containing the file data to upload.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <param name="fileName">The name of the file. Used to determine the MIME type. If the extension is unknown, falls back to "application/octet-stream". Optional.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the upload result with a token.</returns>
+    /// <returns>
+    /// A task that represents the asynchronous operation. The task result contains the upload result.
+    /// For images <see cref="FileUploadResult.Photos"/> is filled and <see cref="FileUploadResult.Token"/> contains the first photo token.
+    /// For video and audio the CDN does not return a token — use <see cref="UploadResponse.Token"/> or <see cref="UploadAsync"/>.
+    /// </returns>
     /// <exception cref="ArgumentException">Thrown when uploadUrl is null or empty, or fileStream is not readable.</exception>
     /// <exception cref="ArgumentNullException">Thrown when fileStream is null.</exception>
     /// <exception cref="Max.Bot.Exceptions.MaxApiException">Thrown when the upload fails.</exception>
     /// <exception cref="Max.Bot.Exceptions.MaxNetworkException">Thrown when a network error occurs.</exception>
     Task<FileUploadResult> UploadFileDataAsync(string uploadUrl, Stream fileStream, string? fileName = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Uploads a file in one call: requests an upload URL (<c>POST /uploads</c>), sends the data and
+    /// returns a result whose <see cref="FileUploadResult.Token"/> is ready to be used in an attachment.
+    /// </summary>
+    /// <remarks>
+    /// For images the token is taken from the returned <c>photos</c> map, for video and audio it is the token issued by
+    /// <c>POST /uploads</c>. Use <see cref="Types.Requests.AttachmentRequest.FromUpload(UploadType, FileUploadResult)"/> to build the attachment.
+    /// </remarks>
+    /// <param name="uploadType">The type of file to upload.</param>
+    /// <param name="fileStream">The stream containing the file data to upload.</param>
+    /// <param name="fileName">The name of the file. Used for the multipart file name and MIME type detection. Optional.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the upload result with a token.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when fileStream is null.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxApiException">Thrown when the API returns an error response.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxNetworkException">Thrown when a network error occurs.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxUnauthorizedException">Thrown when authentication fails.</exception>
+    Task<FileUploadResult> UploadAsync(UploadType uploadType, Stream fileStream, string? fileName = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Uploads file data in chunks using resumable upload method.
@@ -53,7 +76,10 @@ public interface IFilesApi
     /// <param name="chunkSize">The size of each chunk in bytes. Default is 1 MB.</param>
     /// <param name="fileName">The name of the file. Optional.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the upload result with a token.</returns>
+    /// <returns>
+    /// A task that represents the asynchronous operation. The task result contains the upload result.
+    /// For video and audio the CDN does not return a token — use <see cref="UploadResponse.Token"/> from <see cref="UploadFileAsync"/>.
+    /// </returns>
     /// <exception cref="ArgumentException">Thrown when uploadUrl is null or empty, fileStream is not readable, or chunkSize is less than or equal to zero.</exception>
     /// <exception cref="ArgumentNullException">Thrown when fileStream is null.</exception>
     /// <exception cref="Max.Bot.Exceptions.MaxApiException">Thrown when the upload fails.</exception>

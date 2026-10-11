@@ -30,6 +30,11 @@ public class MaxClient : IMaxBotApi, IUpdatePipeline, IDisposable
     private readonly object _pollerLock = new();
     private UpdatePoller? _updatePoller;
 
+    /// <summary>
+    /// Gets the options this client was created with.
+    /// </summary>
+    internal MaxBotOptions Options => _options;
+
     /// <inheritdoc />
     public IBotApi Bot { get; }
 
@@ -201,54 +206,84 @@ public class MaxClient : IMaxBotApi, IUpdatePipeline, IDisposable
     /// <summary>
     /// Configures the webhook endpoint by calling <c>POST /subscriptions</c>.
     /// </summary>
-    /// <param name="url">The webhook URL where updates will be sent.</param>
+    /// <param name="url">
+    /// The webhook URL where updates will be sent. Optional: when omitted, <see cref="MaxWebhookOptions.Endpoint"/>
+    /// from <see cref="MaxBotOptions.Webhook"/> is used.
+    /// </param>
     /// <param name="updateTypes">Optional list of update types to receive. If null, all update types will be received.</param>
-    /// <param name="secret">Optional secret that will be sent in the X-Max-Bot-Api-Secret header.</param>
+    /// <param name="secret">
+    /// Optional secret that MAX sends back in the <c>X-Max-Bot-Api-Secret</c> header. When omitted,
+    /// <see cref="MaxWebhookOptions.SecretToken"/> is used; when provided, it replaces <see cref="MaxWebhookOptions.SecretToken"/>
+    /// after a successful subscription so that incoming webhooks are validated against the secret MAX actually sends.
+    /// </param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the response with success status.</returns>
-    /// <exception cref="ArgumentException">Thrown when url is null, empty, or invalid.</exception>
-    public async Task<Response> ConfigureWebhookAsync(string url, List<UpdateType>? updateTypes = null, string? secret = null, CancellationToken cancellationToken = default)
+    /// <exception cref="ArgumentException">Thrown when neither url nor <see cref="MaxWebhookOptions.Endpoint"/> is set, the URL is invalid, or the secret does not match the MAX format.</exception>
+    public async Task<Response> ConfigureWebhookAsync(string? url = null, List<UpdateType>? updateTypes = null, string? secret = null, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(url))
+        var webhookUrl = string.IsNullOrWhiteSpace(url) ? _options.Webhook.Endpoint : url;
+        if (string.IsNullOrWhiteSpace(webhookUrl))
         {
-            throw new ArgumentException("Webhook URL must be provided.", nameof(url));
+            throw new ArgumentException("Webhook URL must be provided either as an argument or via MaxBotOptions.Webhook.Endpoint.", nameof(url));
         }
 
-        if (_options.Webhook.EnforceHttps)
+        if (!Uri.TryCreate(webhookUrl, UriKind.Absolute, out var parsed))
         {
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var parsed))
-            {
-                throw new ArgumentException("Webhook URL must be an absolute URI.", nameof(url));
-            }
+            throw new ArgumentException("Webhook URL must be an absolute URI.", nameof(url));
+        }
 
-            if (!Uri.UriSchemeHttps.Equals(parsed.Scheme, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new ArgumentException("Webhook URL must use HTTPS when EnforceHttps is enabled.", nameof(url));
-            }
+        if (_options.Webhook.EnforceHttps && !Uri.UriSchemeHttps.Equals(parsed.Scheme, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("Webhook URL must use HTTPS when EnforceHttps is enabled.", nameof(url));
+        }
+
+        var webhookSecret = string.IsNullOrWhiteSpace(secret) ? _options.Webhook.SecretToken : secret;
+        if (!string.IsNullOrWhiteSpace(webhookSecret) && !MaxWebhookOptions.IsValidSecret(webhookSecret))
+        {
+            throw new ArgumentException("Webhook secret must be 5-256 characters long and contain only A-Z, a-z, 0-9, '_' and '-'.", nameof(secret));
         }
 
         var request = new SetWebhookRequest
         {
-            Url = url,
+            Url = webhookUrl,
             UpdateTypes = updateTypes,
-            Secret = secret
+            Secret = string.IsNullOrWhiteSpace(webhookSecret) ? null : webhookSecret
         };
 
-        _options.Webhook.Endpoint = url;
-        return await Subscriptions.SetWebhookAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await Subscriptions.SetWebhookAsync(request, cancellationToken).ConfigureAwait(false);
+        if (!response.Success)
+        {
+            return response;
+        }
+
+        // Keep incoming webhook validation in sync with the subscription that MAX now uses.
+        _options.Webhook.Endpoint = webhookUrl;
+        if (!string.IsNullOrWhiteSpace(secret))
+        {
+            _options.Webhook.SecretToken = secret;
+        }
+
+        return response;
     }
 
     /// <summary>
     /// Deletes the webhook subscription by calling <c>DELETE /subscriptions</c>.
     /// </summary>
-    /// <param name="url">The webhook URL to remove from subscriptions.</param>
+    /// <param name="url">
+    /// The webhook URL to remove from subscriptions. Optional: when omitted, <see cref="MaxWebhookOptions.Endpoint"/> is used.
+    /// </param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the response with success status.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when url is null or empty.</exception>
-    public Task<Response> DeleteWebhookAsync(string url, CancellationToken cancellationToken = default)
+    /// <exception cref="ArgumentException">Thrown when neither url nor <see cref="MaxWebhookOptions.Endpoint"/> is set.</exception>
+    public Task<Response> DeleteWebhookAsync(string? url = null, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(url);
-        return Subscriptions.DeleteWebhookAsync(url, cancellationToken);
+        var webhookUrl = string.IsNullOrWhiteSpace(url) ? _options.Webhook.Endpoint : url;
+        if (string.IsNullOrWhiteSpace(webhookUrl))
+        {
+            throw new ArgumentException("Webhook URL must be provided either as an argument or via MaxBotOptions.Webhook.Endpoint.", nameof(url));
+        }
+
+        return Subscriptions.DeleteWebhookAsync(webhookUrl, cancellationToken);
     }
 
     /// <summary>

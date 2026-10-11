@@ -172,6 +172,12 @@ public class MessageBody
     /// </summary>
     [JsonPropertyName("attachments")]
     public Attachment[]? Attachments { get; set; }
+
+    /// <summary>
+    /// Gets or sets the text markup (bold, links, mentions, ...) applied to <see cref="Text"/>.
+    /// </summary>
+    [JsonPropertyName("markup")]
+    public MarkupElement[]? Markup { get; set; }
 }
 
 /// <summary>
@@ -186,4 +192,53 @@ public class MessageStat
     [Range(0, int.MaxValue, ErrorMessage = "ReadCount cannot be negative.")]
     [JsonPropertyName("read_count")]
     public int? ReadCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of message views (returned by MAX API for channel messages).
+    /// </summary>
+    [Range(0, int.MaxValue, ErrorMessage = "Views cannot be negative.")]
+    [JsonPropertyName("views")]
+    public int? Views { get; set; }
+}
+
+/// <summary>
+/// Represents a formatting element of a message text.
+/// </summary>
+public class MarkupElement
+{
+    /// <summary>
+    /// Gets or sets the markup type (strong, emphasized, monospaced, link, strikethrough, underline, user_mention, heading, highlighted).
+    /// </summary>
+    [JsonPropertyName("type")]
+    public string? Type { get; set; }
+
+    /// <summary>
+    /// Gets or sets the start position (in UTF-16 code units) of the element in the text.
+    /// </summary>
+    [JsonPropertyName("from")]
+    public int From { get; set; }
+
+    /// <summary>
+    /// Gets or sets the length of the element in UTF-16 code units.
+    /// </summary>
+    [JsonPropertyName("length")]
+    public int Length { get; set; }
+
+    /// <summary>
+    /// Gets or sets the URL for <c>link</c> markup.
+    /// </summary>
+    [JsonPropertyName("url")]
+    public string? Url { get; set; }
+
+    /// <summary>
+    /// Gets or sets the mentioned user identifier for <c>user_mention</c> markup.
+    /// </summary>
+    [JsonPropertyName("user_id")]
+    public long? UserId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the mentioned user link for <c>user_mention</c> markup.
+    /// </summary>
+    [JsonPropertyName("user_link")]
+    public string? UserLink { get; set; }
 }

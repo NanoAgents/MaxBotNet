@@ -227,11 +227,12 @@ public class AttachmentFormatTests
     [Fact]
     public void UnknownType_ShouldDeserialize_AsDocumentAttachment()
     {
-        var json = """{"type":"sticker","id":999,"file_id":"sticker1"}""";
+        var json = """{"type":"future_media","id":999,"file_id":"media1"}""";
 
         var attachment = MaxJsonSerializer.Deserialize<Attachment>(json);
 
         attachment.Should().BeOfType<DocumentAttachment>();
+        attachment.Type.Should().Be("future_media");
     }
 
     // ==================== FULL MESSAGE ====================

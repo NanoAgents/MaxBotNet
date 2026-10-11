@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net.Http;
+using System.Text.Json;
 using Max.Bot.Configuration;
 using Max.Bot.Networking;
 using Max.Bot.Types;
@@ -26,15 +28,41 @@ internal class ChatsApi : BaseApi, IChatsApi
     /// <inheritdoc />
     public async Task<Chat> GetChatAsync(long chatId, CancellationToken cancellationToken = default)
     {
-        var request = CreateRequest(HttpMethod.Get, $"/chats/{chatId}");
+        var request = CreateRequest(HttpMethod.Get, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}"));
         return await ExecuteRequestAsync<Chat>(request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task<Chat[]> GetChatsAsync(CancellationToken cancellationToken = default)
     {
-        var request = CreateRequest(HttpMethod.Get, "/chats");
-        return await ExecuteRequestAsync<Chat[]>(request, cancellationToken).ConfigureAwait(false);
+        var response = await GetChatListAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        return response.Chats ?? Array.Empty<Chat>();
+    }
+
+    /// <inheritdoc />
+    public async Task<ChatListResponse> GetChatListAsync(int? count = null, long? marker = null, CancellationToken cancellationToken = default)
+    {
+        if (count is < 1 or > 100)
+        {
+            throw new ArgumentOutOfRangeException(nameof(count), count, "Count must be between 1 and 100.");
+        }
+
+        var queryParams = new Dictionary<string, string?>();
+        if (count.HasValue)
+        {
+            queryParams["count"] = count.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        if (marker.HasValue)
+        {
+            queryParams["marker"] = marker.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        // * GET /chats returns {"chats":[...],"marker":...}
+        var request = CreateRequest(HttpMethod.Get, "/chats", null, queryParams.Count > 0 ? queryParams : null);
+        var response = await ExecuteRequestAsync<ChatListResponse>(request, cancellationToken).ConfigureAwait(false);
+        response.Chats ??= Array.Empty<Chat>();
+        return response;
     }
 
     /// <inheritdoc />
@@ -54,14 +82,14 @@ internal class ChatsApi : BaseApi, IChatsApi
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var apiRequest = CreateRequest(HttpMethod.Patch, $"/chats/{chatId}", request);
+        var apiRequest = CreateRequest(HttpMethod.Patch, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}"), request);
         return await ExecuteRequestAsync<Chat>(apiRequest, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task<Response> DeleteChatAsync(long chatId, CancellationToken cancellationToken = default)
     {
-        var request = CreateRequest(HttpMethod.Delete, $"/chats/{chatId}");
+        var request = CreateRequest(HttpMethod.Delete, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}"));
         return await ExecuteRequestAsync<Response>(request, cancellationToken).ConfigureAwait(false);
     }
 
@@ -70,29 +98,49 @@ internal class ChatsApi : BaseApi, IChatsApi
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var apiRequest = CreateRequest(HttpMethod.Post, $"/chats/{chatId}/actions", request);
+        var apiRequest = CreateRequest(HttpMethod.Post, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}/actions"), request);
         return await ExecuteRequestAsync<Response>(apiRequest, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task<Message?> GetPinnedMessageAsync(long chatId, CancellationToken cancellationToken = default)
     {
-        var request = CreateRequest(HttpMethod.Get, $"/chats/{chatId}/pin");
-        var response = await HttpClient.SendAsync<Response<Message>>(request, cancellationToken).ConfigureAwait(false);
+        var request = CreateRequest(HttpMethod.Get, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}/pin"));
 
-        if (response == null || !response.Ok)
+        // * GET /chats/{chatId}/pin returns {"message": {...}} or {"message": null} when nothing is pinned.
+        var responseBody = await HttpClient.SendAsyncRaw(request, cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(responseBody))
         {
-            if (response != null && !response.Ok)
-            {
-                throw new Exceptions.MaxApiException(
-                    "API request failed. The response indicates an error.",
-                    null,
-                    System.Net.HttpStatusCode.BadRequest);
-            }
             return null;
         }
 
-        return response.Result;
+        try
+        {
+            using var document = JsonDocument.Parse(responseBody);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            // Legacy {"ok": true, "result": {...}} envelope.
+            if (root.TryGetProperty("result", out var result) && result.ValueKind == JsonValueKind.Object)
+            {
+                return result.Deserialize<Message>(MaxJsonSerializer.Options);
+            }
+
+            return root.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.Object
+                ? message.Deserialize<Message>(MaxJsonSerializer.Options)
+                : null;
+        }
+        catch (JsonException ex)
+        {
+            throw new Exceptions.MaxApiException(
+                $"Failed to parse pinned message response: {ex.Message}",
+                null,
+                System.Net.HttpStatusCode.BadRequest,
+                ex);
+        }
     }
 
     /// <inheritdoc />
@@ -100,35 +148,35 @@ internal class ChatsApi : BaseApi, IChatsApi
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var apiRequest = CreateRequest(HttpMethod.Put, $"/chats/{chatId}/pin", request);
+        var apiRequest = CreateRequest(HttpMethod.Put, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}/pin"), request);
         return await ExecuteRequestAsync<Response>(apiRequest, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task<Response> UnpinMessageAsync(long chatId, CancellationToken cancellationToken = default)
     {
-        var request = CreateRequest(HttpMethod.Delete, $"/chats/{chatId}/pin");
+        var request = CreateRequest(HttpMethod.Delete, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}/pin"));
         return await ExecuteRequestAsync<Response>(request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task<ChatMember> GetChatMembershipAsync(long chatId, CancellationToken cancellationToken = default)
     {
-        var request = CreateRequest(HttpMethod.Get, $"/chats/{chatId}/members/me");
+        var request = CreateRequest(HttpMethod.Get, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}/members/me"));
         return await ExecuteRequestAsync<ChatMember>(request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task<Response> LeaveChatAsync(long chatId, CancellationToken cancellationToken = default)
     {
-        var request = CreateRequest(HttpMethod.Delete, $"/chats/{chatId}/members/me");
+        var request = CreateRequest(HttpMethod.Delete, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}/members/me"));
         return await ExecuteRequestAsync<Response>(request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task<ChatMember[]> GetChatAdminsAsync(long chatId, CancellationToken cancellationToken = default)
     {
-        var request = CreateRequest(HttpMethod.Get, $"/chats/{chatId}/members/admins");
+        var request = CreateRequest(HttpMethod.Get, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}/members/admins"));
         var response = await ExecuteRequestAsync<ChatMembersResponse>(request, cancellationToken).ConfigureAwait(false);
         return response.Members ?? [];
     }
@@ -138,7 +186,7 @@ internal class ChatsApi : BaseApi, IChatsApi
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var apiRequest = CreateRequest(HttpMethod.Post, $"/chats/{chatId}/members/admins", request);
+        var apiRequest = CreateRequest(HttpMethod.Post, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}/members/admins"), request);
         return await ExecuteRequestAsync<Response>(apiRequest, cancellationToken).ConfigureAwait(false);
     }
 
@@ -147,26 +195,34 @@ internal class ChatsApi : BaseApi, IChatsApi
     {
         ValidateUserIdStrict(userId);
 
-        var request = CreateRequest(HttpMethod.Delete, $"/chats/{chatId}/members/admins/{userId}");
+        var request = CreateRequest(HttpMethod.Delete, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}/members/admins/{userId}"));
         return await ExecuteRequestAsync<Response>(request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task<ChatMember[]> GetChatMembersAsync(long chatId, long? marker = null, int? count = null, CancellationToken cancellationToken = default)
     {
+        var response = await GetChatMembersPageAsync(chatId, marker, count, cancellationToken).ConfigureAwait(false);
+        return response.Members ?? [];
+    }
+
+    /// <inheritdoc />
+    public async Task<ChatMembersResponse> GetChatMembersPageAsync(long chatId, long? marker = null, int? count = null, CancellationToken cancellationToken = default)
+    {
         var queryParams = new Dictionary<string, string?>();
         if (marker.HasValue)
         {
-            queryParams["marker"] = marker.Value.ToString();
+            queryParams["marker"] = marker.Value.ToString(CultureInfo.InvariantCulture);
         }
         if (count.HasValue)
         {
-            queryParams["count"] = count.Value.ToString();
+            queryParams["count"] = count.Value.ToString(CultureInfo.InvariantCulture);
         }
 
-        var request = CreateRequest(HttpMethod.Get, $"/chats/{chatId}/members", null, queryParams.Count > 0 ? queryParams : null);
+        var request = CreateRequest(HttpMethod.Get, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}/members"), null, queryParams.Count > 0 ? queryParams : null);
         var response = await ExecuteRequestAsync<ChatMembersResponse>(request, cancellationToken).ConfigureAwait(false);
-        return response.Members ?? [];
+        response.Members ??= [];
+        return response;
     }
 
     /// <inheritdoc />
@@ -174,7 +230,7 @@ internal class ChatsApi : BaseApi, IChatsApi
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var apiRequest = CreateRequest(HttpMethod.Post, $"/chats/{chatId}/members", request);
+        var apiRequest = CreateRequest(HttpMethod.Post, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}/members"), request);
         return await ExecuteRequestAsync<Response>(apiRequest, cancellationToken).ConfigureAwait(false);
     }
 
@@ -185,10 +241,10 @@ internal class ChatsApi : BaseApi, IChatsApi
 
         var queryParams = new Dictionary<string, string?>
         {
-            { "user_id", userId.ToString() }
+            { "user_id", userId.ToString(CultureInfo.InvariantCulture) }
         };
 
-        var request = CreateRequest(HttpMethod.Delete, $"/chats/{chatId}/members", null, queryParams);
+        var request = CreateRequest(HttpMethod.Delete, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}/members"), null, queryParams);
         return await ExecuteRequestAsync<Response>(request, cancellationToken).ConfigureAwait(false);
     }
 }

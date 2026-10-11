@@ -74,6 +74,21 @@ public class InlineKeyboardButtonJsonConverter : JsonConverter<InlineKeyboardBut
             }
         }
 
+        if (root.TryGetProperty("web_app", out var webAppElement) && webAppElement.ValueKind == JsonValueKind.String)
+        {
+            button.WebApp = webAppElement.GetString();
+        }
+
+        if (root.TryGetProperty("contact_id", out var contactIdElement) && contactIdElement.ValueKind == JsonValueKind.Number && contactIdElement.TryGetInt64(out var contactId))
+        {
+            button.ContactId = contactId;
+        }
+
+        if (root.TryGetProperty("quick", out var quickElement) && quickElement.ValueKind is JsonValueKind.True or JsonValueKind.False)
+        {
+            button.Quick = quickElement.GetBoolean();
+        }
+
         // Read intent (for callback buttons)
         if (root.TryGetProperty("intent", out var intentElement) && intentElement.ValueKind == JsonValueKind.String)
         {
@@ -99,7 +114,10 @@ public class InlineKeyboardButtonJsonConverter : JsonConverter<InlineKeyboardBut
         writer.WriteStartObject();
 
         // Write type (required) - convert to snake_case to match API format
-        var typeString = (int)value.Type == 5 ? "link" : ConvertToSnakeCase(value.Type.ToString());
+        // * OpenApp without web_app keeps the legacy "link" representation (0.6.2 behaviour).
+        var typeString = value.Type == ButtonType.OpenApp && string.IsNullOrEmpty(value.WebApp)
+            ? "link"
+            : ConvertToSnakeCase(value.Type.ToString());
         writer.WriteString("type", typeString);
 
         // Write text (required)
@@ -115,6 +133,21 @@ public class InlineKeyboardButtonJsonConverter : JsonConverter<InlineKeyboardBut
         if (!string.IsNullOrEmpty(value.Url))
         {
             writer.WriteString("url", value.Url);
+        }
+
+        if (!string.IsNullOrEmpty(value.WebApp))
+        {
+            writer.WriteString("web_app", value.WebApp);
+        }
+
+        if (value.ContactId.HasValue)
+        {
+            writer.WriteNumber("contact_id", value.ContactId.Value);
+        }
+
+        if (value.Quick.HasValue)
+        {
+            writer.WriteBoolean("quick", value.Quick.Value);
         }
 
         // Write intent (for callback buttons)

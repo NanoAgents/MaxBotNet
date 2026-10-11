@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -46,18 +47,65 @@ internal class FilesApi : BaseApi, IFilesApi
         ValidateNotEmpty(uploadUrl, nameof(uploadUrl));
         ArgumentNullException.ThrowIfNull(fileStream);
 
+        // A retry must send the whole file again. Non-seekable streams (network, pipes) are buffered once,
+        // as the official Go SDK does, so that every attempt can start from the beginning.
+        MemoryStream? bufferedStream = null;
+        if (!fileStream.CanSeek)
+        {
+            bufferedStream = new MemoryStream();
+            await fileStream.CopyToAsync(bufferedStream, cancellationToken).ConfigureAwait(false);
+            bufferedStream.Position = 0;
+        }
+
+        var uploadStream = bufferedStream ?? fileStream;
+        var initialPosition = uploadStream.Position;
+
         // Factory to create content for retries
         HttpContent CreateContent()
         {
+            uploadStream.Position = initialPosition;
+
             var content = new MultipartFormDataContent();
-            var streamContent = new StreamContent(new NonDisposingStreamWrapper(fileStream));
+            var streamContent = new StreamContent(new NonDisposingStreamWrapper(uploadStream));
             streamContent.Headers.ContentType = new MediaTypeHeaderValue(MimeTypes.FromFileName(fileName) ?? "application/octet-stream");
             content.Add(streamContent, "data", fileName ?? "file");
             return content;
         }
 
-        var responseBody = await HttpClient.SendAsyncRaw(uploadUrl, CreateContent, cancellationToken).ConfigureAwait(false);
-        return ParseUploadResponse(responseBody);
+        try
+        {
+            var responseBody = await HttpClient.SendAsyncRaw(uploadUrl, CreateContent, cancellationToken).ConfigureAwait(false);
+            return ParseUploadResponse(responseBody);
+        }
+        finally
+        {
+            if (bufferedStream != null)
+            {
+                await bufferedStream.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+    }
+
+    public async Task<FileUploadResult> UploadAsync(UploadType uploadType, Stream fileStream, string? fileName = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(fileStream);
+
+        var upload = await UploadFileAsync(uploadType, cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(upload?.Url))
+        {
+            throw new MaxApiException("POST /uploads did not return an upload URL.", null, System.Net.HttpStatusCode.BadRequest);
+        }
+
+        var result = await UploadFileDataAsync(upload.Url, fileStream, fileName, cancellationToken).ConfigureAwait(false);
+
+        // * For video and audio the token is issued by POST /uploads, the CDN response does not contain it.
+        if (!string.IsNullOrEmpty(upload.Token) &&
+            (uploadType is UploadType.Video or UploadType.Audio || string.IsNullOrEmpty(result.Token)))
+        {
+            result.Token = upload.Token;
+        }
+
+        return result;
     }
 
     public async Task<FileUploadResult> UploadFileResumableAsync(string uploadUrl, Stream fileStream, long chunkSize = 1024 * 1024, string? fileName = null, CancellationToken cancellationToken = default)
@@ -68,6 +116,7 @@ internal class FilesApi : BaseApi, IFilesApi
 
         var buffer = new byte[chunkSize];
         long totalBytesRead = 0;
+        string? lastResponseBody = null;
         long fileLength = fileStream.CanSeek ? fileStream.Length : -1;
 
         while (true)
@@ -97,10 +146,11 @@ internal class FilesApi : BaseApi, IFilesApi
             var responseBody = await HttpClient.SendAsyncRaw(uploadUrl, CreateChunkContent, cancellationToken).ConfigureAwait(false);
 
             totalBytesRead += bytesRead;
+            lastResponseBody = responseBody;
 
             // Check if this chunk's response already contains the token/result
             var result = ParseUploadResponse(responseBody);
-            if (result.Token != null)
+            if (result.Token != null || result.FileId != null)
             {
                 return result;
             }
@@ -108,23 +158,45 @@ internal class FilesApi : BaseApi, IFilesApi
             if (fileLength > 0 && totalBytesRead >= fileLength) break;
         }
 
-        // Finalize: If we reached here without a token, try a final GET
+        // * Video/audio CDN acknowledges chunks without a token (e.g. "<retval>1</retval>"): the token comes from POST /uploads.
+        if (!string.IsNullOrWhiteSpace(lastResponseBody))
+        {
+            return ParseUploadResponse(lastResponseBody);
+        }
+
+        // Finalize: If the server returned nothing for the chunks, try a final GET
         var finalResponseBody = await HttpClient.SendAsyncRaw(uploadUrl, null, cancellationToken, HttpMethod.Get).ConfigureAwait(false);
         return ParseUploadResponse(finalResponseBody);
     }
 
-    private static FileUploadResult ParseUploadResponse(string responseBody)
+    internal static FileUploadResult ParseUploadResponse(string responseBody)
     {
         if (string.IsNullOrWhiteSpace(responseBody)) return new FileUploadResult();
-        try
+
+        var trimmed = responseBody.Trim();
+        if (trimmed.StartsWith('{'))
         {
-            return JsonSerializer.Deserialize<FileUploadResult>(responseBody, MaxJsonSerializer.Options) ?? new FileUploadResult();
+            try
+            {
+                var result = JsonSerializer.Deserialize<FileUploadResult>(trimmed, MaxJsonSerializer.Options) ?? new FileUploadResult();
+                result.NormalizeToken();
+                return result;
+            }
+            catch (JsonException)
+            {
+                return new FileUploadResult();
+            }
         }
-        catch (JsonException)
+
+        // * Video/audio CDN endpoints answer with XML such as "<retval>1</retval>": that is not a token,
+        // the real token comes from POST /uploads (see UploadAsync).
+        if (trimmed.StartsWith('<') || trimmed.StartsWith('[') || trimmed.Any(char.IsWhiteSpace))
         {
-            // Fallback for raw token strings
-            return new FileUploadResult { Token = responseBody };
+            return new FileUploadResult();
         }
+
+        // Fallback for raw token strings
+        return new FileUploadResult { Token = trimmed.Trim('"') };
     }
 
     private sealed class NonDisposingStreamWrapper : Stream

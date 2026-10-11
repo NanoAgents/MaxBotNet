@@ -29,20 +29,17 @@ public class AttachmentRequestTests
     }
 
     [Fact]
-    public void Payload_ShouldBeRequired()
+    public void Payload_ShouldBeOptional_ForLocationAttachments()
     {
-        // Arrange
-        var request = new AttachmentRequest
-        {
-            Type = "image",
-            Payload = null!
-        };
+        // Arrange — MAX API location attachments carry latitude/longitude instead of a payload
+        var request = AttachmentRequest.Location(55.75, 37.62);
 
         // Act
         var validationResults = ValidateModel(request);
 
         // Assert
-        validationResults.Should().Contain(v => v.MemberNames.Contains("Payload") && v.ErrorMessage != null && v.ErrorMessage.Contains("required", StringComparison.OrdinalIgnoreCase));
+        request.Payload.Should().BeNull();
+        validationResults.Should().BeEmpty();
     }
 
     [Fact]

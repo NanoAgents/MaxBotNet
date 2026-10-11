@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -93,17 +94,17 @@ internal class SubscriptionsApi : BaseApi, ISubscriptionsApi
 
         if (request.Limit.HasValue)
         {
-            queryParams["limit"] = request.Limit.Value.ToString();
+            queryParams["limit"] = request.Limit.Value.ToString(CultureInfo.InvariantCulture);
         }
 
         if (request.Timeout.HasValue)
         {
-            queryParams["timeout"] = request.Timeout.Value.ToString();
+            queryParams["timeout"] = request.Timeout.Value.ToString(CultureInfo.InvariantCulture);
         }
 
         if (request.Marker.HasValue)
         {
-            queryParams["marker"] = request.Marker.Value.ToString();
+            queryParams["marker"] = request.Marker.Value.ToString(CultureInfo.InvariantCulture);
         }
 
         if (request.Types != null && request.Types.Count > 0)

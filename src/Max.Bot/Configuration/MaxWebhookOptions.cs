@@ -9,6 +9,7 @@ public sealed class MaxWebhookOptions
 {
     /// <summary>
     /// Gets or sets the public HTTPS endpoint that MAX should call (maps to subscription <c>url</c> payload).
+    /// Used by <see cref="MaxClient.ConfigureWebhookAsync"/> and <see cref="MaxClient.DeleteWebhookAsync"/> when no URL is passed.
     /// </summary>
     public string? Endpoint { get; set; }
 
@@ -18,14 +19,21 @@ public sealed class MaxWebhookOptions
     public bool EnforceHttps { get; set; } = true;
 
     /// <summary>
-    /// Gets or sets the shared secret MAX will include in webhook requests (recommended by Telegram/Vk best practices).
+    /// Gets or sets the shared secret (5-256 characters: A-Z, a-z, 0-9, <c>_</c> and <c>-</c>) passed to MAX as the subscription
+    /// <c>secret</c>. MAX sends it back in the <see cref="SignatureHeaderName"/> header of every webhook request,
+    /// and incoming requests without a matching header are rejected.
     /// </summary>
     public string? SecretToken { get; set; }
 
     /// <summary>
-    /// Gets or sets the header name storing the webhook signature or secret token.
+    /// The header MAX uses to send the subscription secret with every webhook request.
     /// </summary>
-    public string SignatureHeaderName { get; set; } = "X-Max-Signature";
+    public const string DefaultSignatureHeaderName = "X-Max-Bot-Api-Secret";
+
+    /// <summary>
+    /// Gets or sets the header name storing the webhook secret token. Defaults to <c>X-Max-Bot-Api-Secret</c>.
+    /// </summary>
+    public string SignatureHeaderName { get; set; } = DefaultSignatureHeaderName;
 
     /// <summary>
     /// Gets or sets the maximum accepted request body size for webhook payloads (in KiB).
@@ -41,6 +49,29 @@ public sealed class MaxWebhookOptions
     /// Gets or sets a value indicating whether every subscription change must be confirmed with MAX via POST/DELETE /subscriptions.
     /// </summary>
     public bool RequireSubscriptionConfirmation { get; set; } = true;
+
+    /// <summary>
+    /// Determines whether a webhook secret matches the MAX API format (5-256 characters: A-Z, a-z, 0-9, <c>_</c> and <c>-</c>).
+    /// </summary>
+    /// <param name="secret">The secret to check.</param>
+    /// <returns><c>true</c> when the secret can be used for a subscription; otherwise, <c>false</c>.</returns>
+    public static bool IsValidSecret(string? secret)
+    {
+        if (secret is null || secret.Length is < 5 or > 256)
+        {
+            return false;
+        }
+
+        foreach (var ch in secret)
+        {
+            if (!(char.IsAsciiLetterOrDigit(ch) || ch is '_' or '-'))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     /// <summary>
     /// Validates option values.
@@ -74,6 +105,11 @@ public sealed class MaxWebhookOptions
         if (string.IsNullOrWhiteSpace(SignatureHeaderName))
         {
             throw new ArgumentException("SignatureHeaderName cannot be null or whitespace.", nameof(SignatureHeaderName));
+        }
+
+        if (!string.IsNullOrWhiteSpace(SecretToken) && !IsValidSecret(SecretToken))
+        {
+            throw new ArgumentException("SecretToken must be 5-256 characters long and contain only A-Z, a-z, 0-9, '_' and '-'.", nameof(SecretToken));
         }
     }
 }

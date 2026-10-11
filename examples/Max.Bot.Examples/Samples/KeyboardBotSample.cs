@@ -45,12 +45,12 @@ public sealed class KeyboardBotSample : IBotSample
         {
             new[]
             {
-                new InlineKeyboardButton { Text = "СЂСџвЂРЊ Approve", CallbackData = "vote:approve" },
-                new InlineKeyboardButton { Text = "СЂСџвЂР‹ Reject", CallbackData = "vote:reject" }
+                new InlineKeyboardButton { Text = "👍 Approve", CallbackData = "vote:approve" },
+                new InlineKeyboardButton { Text = "👎 Reject", CallbackData = "vote:reject" }
             },
             new[]
             {
-                new InlineKeyboardButton { Text = "СЂСџвЂњС™ Docs", Url = "https://dev.max.ru/docs-api" }
+                new InlineKeyboardButton { Text = "📚 Docs", Url = "https://dev.max.ru/docs-api" }
             }
         });
 
@@ -72,9 +72,9 @@ public sealed class KeyboardBotSample : IBotSample
 
         var responseText = callback.Payload switch
         {
-            "vote:approve" => "РІСљвЂ¦ Approved",
-            "vote:reject" => "РІСњРЉ Rejected",
-            _ => "РІвЂћв„–РїС'РЏ Received."
+            "vote:approve" => "✅ Approved",
+            "vote:reject" => "❌ Rejected",
+            _ => "ℹ️ Received."
         };
 
         var request = new AnswerCallbackQueryRequest

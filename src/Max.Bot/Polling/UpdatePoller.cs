@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -187,42 +188,39 @@ public sealed class UpdatePoller : IAsyncDisposable
                 var response = await FetchUpdatesAsync(_marker, cancellationToken).ConfigureAwait(false);
                 _consecutiveErrors = 0;
 
-                long? lastProcessedUpdateId = null;
-
                 if (response.Updates?.Length > 0)
                 {
+                    var batchCompleted = true;
                     foreach (var update in response.Updates)
                     {
                         if (cancellationToken.IsCancellationRequested)
                         {
+                            batchCompleted = false;
                             break;
                         }
 
                         if (!ShouldDispatch(update))
                         {
-                            lastProcessedUpdateId = update.UpdateId;
                             continue;
                         }
 
                         try
                         {
                             await DispatchAsync(update, cancellationToken).ConfigureAwait(false);
-                            lastProcessedUpdateId = update.UpdateId;
                         }
                         catch (Exception ex)
                         {
                             _logger?.LogError(ex, "Failed to dispatch update {UpdateId}. Skipping.", update.UpdateId);
-                            lastProcessedUpdateId = update.UpdateId;
                         }
                     }
 
-                    if (_options.Polling.PersistMarkers)
+                    // * MAX updates carry no update_id: the next page is addressed only by the marker returned with the batch.
+                    // Advance it only when the whole batch was walked, so a stop mid-batch re-fetches the rest (at-least-once).
+                    if (batchCompleted)
                     {
-                        _marker = lastProcessedUpdateId ?? response.Marker ?? _marker;
-                    }
-                    else
-                    {
-                        _marker = lastProcessedUpdateId ?? response.Marker ?? _options.Polling.InitialMarker;
+                        _marker = _options.Polling.PersistMarkers
+                            ? response.Marker ?? _marker
+                            : response.Marker ?? _options.Polling.InitialMarker;
                     }
                 }
                 else
@@ -248,7 +246,8 @@ public sealed class UpdatePoller : IAsyncDisposable
             }
         }
 
-        await DrainHandlersAsync(cancellationToken).ConfigureAwait(false);
+        // * The poll token is already cancelled here: wait for the handlers themselves, StopAsync bounds the wait.
+        await DrainHandlersAsync(CancellationToken.None).ConfigureAwait(false);
     }
 
     private async Task<GetUpdatesResponse> FetchUpdatesAsync(long? marker, CancellationToken cancellationToken)
@@ -258,13 +257,13 @@ public sealed class UpdatePoller : IAsyncDisposable
         // the dedicated polling client with its own (larger) timeout.
         var queryParams = new Dictionary<string, string?>
         {
-            { "limit", _options.Polling.BatchSize.ToString() },
-            { "timeout", ((int)Math.Round(_options.Polling.LongPollingTimeout.TotalSeconds)).ToString() }
+            { "limit", _options.Polling.BatchSize.ToString(CultureInfo.InvariantCulture) },
+            { "timeout", ((int)Math.Round(_options.Polling.LongPollingTimeout.TotalSeconds)).ToString(CultureInfo.InvariantCulture) }
         };
 
         if (marker.HasValue)
         {
-            queryParams["marker"] = marker.Value.ToString();
+            queryParams["marker"] = marker.Value.ToString(CultureInfo.InvariantCulture);
         }
 
         if (_typeQueryFilter != null && _typeQueryFilter.Count > 0)
@@ -307,7 +306,8 @@ public sealed class UpdatePoller : IAsyncDisposable
 
         try
         {
-            return MaxJsonSerializer.Deserialize<GetUpdatesResponse>(body);
+            return GetUpdatesResponse.ParseTolerant(body, (ex, raw) =>
+                _logger?.LogError(ex, "Skipping update that could not be deserialized: {Update}", raw));
         }
         catch (Exception ex)
         {
@@ -335,7 +335,7 @@ public sealed class UpdatePoller : IAsyncDisposable
                 {
                     _logger?.LogError(t.Exception, "Unhandled exception in update handler for update {UpdateId}.", update.UpdateId);
                 }
-            }, cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
+            }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
 
         _inFlightHandlers.Add(handlerTask);
 
