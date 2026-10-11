@@ -51,6 +51,29 @@ public sealed class MaxWebhookOptions
     public bool RequireSubscriptionConfirmation { get; set; } = true;
 
     /// <summary>
+    /// Determines whether a webhook secret matches the MAX API format (5-256 characters: A-Z, a-z, 0-9, <c>_</c> and <c>-</c>).
+    /// </summary>
+    /// <param name="secret">The secret to check.</param>
+    /// <returns><c>true</c> when the secret can be used for a subscription; otherwise, <c>false</c>.</returns>
+    public static bool IsValidSecret(string? secret)
+    {
+        if (secret is null || secret.Length is < 5 or > 256)
+        {
+            return false;
+        }
+
+        foreach (var ch in secret)
+        {
+            if (!(char.IsAsciiLetterOrDigit(ch) || ch is '_' or '-'))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// Validates option values.
     /// </summary>
     /// <exception cref="ArgumentException">Thrown when configuration is invalid.</exception>
@@ -82,6 +105,11 @@ public sealed class MaxWebhookOptions
         if (string.IsNullOrWhiteSpace(SignatureHeaderName))
         {
             throw new ArgumentException("SignatureHeaderName cannot be null or whitespace.", nameof(SignatureHeaderName));
+        }
+
+        if (!string.IsNullOrWhiteSpace(SecretToken) && !IsValidSecret(SecretToken))
+        {
+            throw new ArgumentException("SecretToken must be 5-256 characters long and contain only A-Z, a-z, 0-9, '_' and '-'.", nameof(SecretToken));
         }
     }
 }

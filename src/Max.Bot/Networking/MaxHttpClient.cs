@@ -326,8 +326,13 @@ public class MaxHttpClient : IMaxHttpClient
         if (response.Headers.TryGetValues("Retry-After", out var values))
         {
             var value = values.FirstOrDefault();
-            if (int.TryParse(value, out var seconds)) return TimeSpan.FromSeconds(seconds);
-            if (DateTimeOffset.TryParse(value, out var date)) return date - DateTimeOffset.UtcNow;
+            if (int.TryParse(value, out var seconds)) return TimeSpan.FromSeconds(Math.Max(0, seconds));
+            if (DateTimeOffset.TryParse(value, out var date))
+            {
+                // A date in the past (clock skew) must not produce a negative Task.Delay.
+                var delta = date - DateTimeOffset.UtcNow;
+                return delta > TimeSpan.Zero ? delta : TimeSpan.Zero;
+            }
         }
         return null;
     }

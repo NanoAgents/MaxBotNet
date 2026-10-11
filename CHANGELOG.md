@@ -16,8 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Webhook endpoint is opt-in** (#35): `WebhookController` стал `abstract`, поэтому подключение пакета больше не добавляет `POST /api/max/webhook` (и запись в Swagger) в каждое ASP.NET Core приложение. Подключайте эндпоинт явно через `app.MapMaxWebhook()` или унаследуйтесь от `WebhookController` с `[Route(...)]`.
 - **Webhook secret header**: `MaxWebhookOptions.SignatureHeaderName` по умолчанию теперь `X-Max-Bot-Api-Secret` — именно этот заголовок присылает MAX. Раньше при заданном `SecretToken` все реальные webhook-запросы отклонялись с 401.
 - **Callback answer body**: `NewMessageBody.Attachments` теперь `AttachmentRequest[]`, а `NewMessageBody.Link` — `NewMessageLink` (формат запроса `POST /answers`).
-- **AttachmentRequest**: `Payload` стал nullable (у `location` нет payload), добавлены `Latitude`/`Longitude`; атрибуты `[Required]` убраны.
+- **AttachmentRequest**: `Payload` стал nullable (у `location` нет payload), добавлены `Latitude`/`Longitude`; с `Payload` снят атрибут `[Required]` (`Type` по-прежнему обязателен).
 - **Typed updates**: `MessageRemovedUpdate.Message` и `MessageChatCreatedUpdate.Message` стали nullable — MAX присылает для этих событий идентификаторы, а не сообщение.
+- **WebhookController action**: `PostAsync(CancellationToken)` больше не принимает `[FromBody] Update` — контроллер сам читает тело после проверки размера и секрета, поэтому неавторизованные запросы не парсятся.
+- **Webhook secret format**: `MaxWebhookOptions.Validate()` и `ConfigureWebhookAsync` отклоняют секрет, не соответствующий формату MAX (5-256 символов `A-Z`, `a-z`, `0-9`, `_`, `-`).
+- **Upload result**: `photos` и `file_id` разбираются в типизированные `FileUploadResult.Photos` / `FileId` и больше не попадают в `AdditionalProperties`.
+- **New interface members**: `IMessagesApi.GetMessagesAsync(chatId, count, from, to)`, `IMessagesApi.GetMessagesByIdsAsync`, `IChatsApi.GetChatListAsync`, `IChatsApi.GetChatMembersPageAsync`, `IFilesApi.UploadAsync` — собственные реализации этих интерфейсов нужно дополнить.
+- **AddChatAdminRequest.UserId** помечен `[Obsolete]`: MAX требует список прав, используйте `Admins` с `ChatAdmin.Permissions`.
 
 ### Added
 
@@ -26,8 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MapMaxWebhook** (#35): minimal-API эндпоинт `app.MapMaxWebhook(pattern)` с проверкой секрета и лимита размера тела.
 - **MaxAttachmentNotReadyException** (#22): отдельное исключение для ошибки `attachment.not.ready`.
 - **Messages pagination** (#18): `GetMessagesAsync(chatId, count, from, to)` и `GetMessagesByIdsAsync(messageIds)`.
-- **Chats pagination** (#23): `GetChatListAsync(count, marker)` возвращает `ChatListResponse` с `marker` следующей страницы.
-- **Chat info in updates** (#37): `Update.ChatId`, `Update.Chat` (частично: id и тип) и `Update.ChatType` заполняются из `message.recipient` для `message_created`, `message_edited` и `message_callback`.
+- **Chats pagination** (#23): `GetChatListAsync(count, marker)` возвращает `ChatListResponse` с `marker` следующей страницы; `GetChatMembersPageAsync(chatId, marker, count)` возвращает участников вместе с `marker`.
+- **Inline buttons**: `ButtonType.Clipboard`, кнопка `open_app` (`ButtonType.OpenApp` + `InlineKeyboardButton.WebApp`/`ContactId`) и `Quick` для `request_geo_location`. `OpenApp` без `WebApp` по-прежнему отправляется как `link`.
+- **Chat info in updates** (#37): `Update.ChatId`, `Update.Chat` (частично: id и тип) и `Update.ChatType` заполняются из `message.recipient` для `message_created`, `message_edited` и `message_callback`; для `bot_added`/`bot_removed`/`user_added`/`user_removed` `ChatType` вычисляется из `is_channel`.
 - **Update fields**: `message_id`, `user_id`, `admin_id`, `title`, `is_channel`, `muted_until`, `start_payload` и соответствующие свойства в типизированных обёртках (`MessageRemovedUpdate`, `UserRemovedUpdate`, `ChatTitleChangedUpdate`, `BotAddedUpdate` и др.).
 - **Attachments**: `StickerAttachment`, `ShareAttachment`; `Token` у фото/видео/аудио/файлов, `VideoAttachment.Thumbnail`, `AudioAttachment.Transcription`.
 - **Models**: `MessageBody.Markup`, `MessageStat.Views`, `Chat.MessagesCount`, `ChatStatus.Suspended`, `Subscription.Time`/`Version`, `ChatAdmin` для назначения администраторов.
@@ -37,14 +43,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Callback answers** (#34): `AnswerCallbackQueryAsync` передаёт `callback_id` вместо устаревшего `callback_query_id`.
 - **Image upload token** (#38): `FileUploadResult` снова содержит типизированные `Photos` и `FileId`, а `Token` заполняется из `photos`; XML-ответ CDN (`<retval>1</retval>`) больше не считается токеном.
 - **API error parsing** (#22): ошибки формата `{"code": "...", "message": "..."}` разбираются в `MaxApiException.ErrorCode`/`Message` вместо сырого JSON в тексте исключения.
-- **Attachment retry**: повтор отправки/редактирования выполняется только для `attachment.not.ready` (раньше повторялся любой `400 Bad Request`); добавлен повтор для `EditMessageAsync`.
+- **Attachment retry**: повтор отправки/редактирования выполняется только для `attachment.not.ready` (раньше повторялся любой `400 Bad Request`); повтор добавлен для `SendMessageAsync(SendMessageRequest)` с вложениями и для `EditMessageAsync`.
 - **Get chats** (#23): `GetChatsAsync` корректно разбирает ответ `{"chats": [...], "marker": ...}` вместо исключения `The JSON value could not be converted to Max.Bot.Types.Chat[]`.
 - **Pinned message**: `GetPinnedMessageAsync` разбирает ответ `{"message": ...}` и возвращает `null`, если ничего не закреплено.
 - **Add chat admins**: `AddChatAdminRequest` сериализуется как `{"admins": [{"user_id", "permissions", "alias"}]}`.
 - **Incoming attachments** (#20, #21, #25): поля из `payload` и корня вложения объединяются — у файлов теперь заполняются `FileName`/`FileSize` (`filename`/`size`), у видео — размеры, длительность и превью.
 - **Long polling marker**: следующий запрос `GET /updates` использует `marker` из ответа. Раньше подставлялся `update_id`, которого нет в MAX API (всегда `0`).
 - **Webhook configuration** (#36): `ConfigureWebhookAsync()` и `DeleteWebhookAsync()` берут URL из `MaxWebhookOptions.Endpoint`, а секрет — из `MaxWebhookOptions.SecretToken`, если они не переданы явно.
-- **Upload retries**: при повторе `UploadFileDataAsync` поток перематывается в начало, чтобы не отправлять пустой файл.
+- **Upload retries**: при повторе `UploadFileDataAsync` поток перематывается в начало, а не поддерживающие seek потоки один раз буферизуются, чтобы не отправлять пустой файл. Токен, вычисленный из `photos`, не сериализуется обратно (в image payload `token` и `photos` взаимоисключающие). `UploadFileResumableAsync` больше не делает лишний GET после загрузки видео/аудио.
+- **Culture-invariant ids**: id чатов/пользователей и числовые query-параметры форматируются через `InvariantCulture` — в культурах с минусом U+2212 (sv-SE, nb-NO, fi-FI) запросы к групповым чатам (отрицательные id) ломались.
+- **Poison updates**: апдейт, который не удалось разобрать, пропускается с логированием — раньше он ронял всю пачку, маркер не сдвигался и long polling зацикливался. Вложения с неожиданными типами полей превращаются в «пустое» вложение нужного типа вместо исключения.
+- **Polling**: маркер сдвигается только после обработки всей пачки (остановка посреди пачки не теряет апдейты); `StopAsync` дожидается параллельных обработчиков; фильтр `AllowedUsernames` для `message_callback` проверяет нажавшего кнопку, а не автора сообщения-бота.
+- **Webhook hardening**: `MapMaxWebhook` не подставляет пустые `IOptions<MaxBotOptions>` (это отключало проверку секрета) и берёт опции из `MaxClient`; `MaxWebhookOptions.HandlerTimeout` теперь применяется; `ConfigureWebhookAsync` обновляет `Endpoint`/`SecretToken` только при `success: true` и всегда сохраняет переданный секрет.
+- **Retry-After**: дата в прошлом или отрицательное значение больше не приводят к `ArgumentOutOfRangeException` в цикле повторов.
+- **message_chat_created**: `Update.ChatId` и `MessageChatCreatedUpdate.ChatId` заполняются из объекта `chat`.
 - **Unknown enum values**: неизвестные статусы чата и права администраторов больше не ломают десериализацию ответа.
 - **User-Agent**: заголовок содержит фактическую версию пакета вместо зашитой `0.5.1-alpha`.
 - **Build**: `Microsoft.SourceLink.GitHub` обновлён до `10.0.401` — версия `8.0.0` тянула уязвимый `Microsoft.Build.Tasks.Git` (GHSA-23fw-v26w-5fgq), из-за чего `dotnet restore` падал с `NU1902` при `TreatWarningsAsErrors`.
@@ -371,7 +383,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/NanoAgents/MaxBotNet/compare/v0.6.2-alpha...HEAD
+[Unreleased]: https://github.com/NanoAgents/MaxBotNet/compare/v0.7.0-alpha...HEAD
+[0.7.0-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.6.3-alpha...v0.7.0-alpha
+[0.6.3-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.6.2-alpha...v0.6.3-alpha
 [0.6.2-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.6.1-alpha...v0.6.2-alpha
 [0.6.1-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.5.6-alpha...v0.6.1-alpha
 [0.5.6-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.5.5-alpha...v0.5.6-alpha

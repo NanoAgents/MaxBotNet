@@ -129,6 +129,26 @@ public class AttachmentJsonConverter : JsonConverter<Attachment>
     /// This method merges both levels into one object and deserializes it into the flat attachment model.
     /// </summary>
     private static T? DeserializeMerged<T>(JsonElement root, string? typeString, string? legacyPayloadPropertyName, JsonSerializerOptions options)
+        where T : Attachment, new()
+    {
+        try
+        {
+            return DeserializeMergedCore<T>(root, typeString, legacyPayloadPropertyName, options);
+        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
+        {
+            // An attachment with unexpected field types must not break the whole message/update batch.
+            var fallback = new T();
+            if (!string.IsNullOrWhiteSpace(typeString))
+            {
+                fallback.Type = typeString;
+            }
+
+            return fallback;
+        }
+    }
+
+    private static T? DeserializeMergedCore<T>(JsonElement root, string? typeString, string? legacyPayloadPropertyName, JsonSerializerOptions options)
         where T : Attachment
     {
         var merged = new JsonObject();

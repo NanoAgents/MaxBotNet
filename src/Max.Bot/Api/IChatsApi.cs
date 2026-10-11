@@ -212,6 +212,19 @@ public interface IChatsApi
     Task<ChatMember[]> GetChatMembersAsync(long chatId, long? marker = null, int? count = null, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets a page of chat members together with the marker of the next page (<c>GET /chats/{chatId}/members</c>).
+    /// </summary>
+    /// <param name="chatId">The unique identifier of the chat.</param>
+    /// <param name="marker">Marker of the page to return, taken from <see cref="ChatMembersResponse.Marker"/> of the previous page. Optional.</param>
+    /// <param name="count">Number of members to return (1-100). Optional.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the members and the next page marker.</returns>
+    /// <exception cref="Max.Bot.Exceptions.MaxApiException">Thrown when the API returns an error response.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxNetworkException">Thrown when a network error occurs.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxUnauthorizedException">Thrown when authentication fails.</exception>
+    Task<ChatMembersResponse> GetChatMembersPageAsync(long chatId, long? marker = null, int? count = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Adds members to a chat.
     /// </summary>
     /// <param name="chatId">The unique identifier of the chat.</param>

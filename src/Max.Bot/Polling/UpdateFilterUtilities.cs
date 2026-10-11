@@ -59,8 +59,9 @@ internal static class UpdateFilterUtilities
 
     public static string? ExtractUsername(Update update)
     {
-        return update.Message?.Sender?.Username ??
-               update.Callback?.User?.Username ??
+        // * In message_callback the message is the bot's own message with the keyboard: the presser is callback.user.
+        return update.Callback?.User?.Username ??
+               update.Message?.Sender?.Username ??
                update.User?.Username;
     }
 }

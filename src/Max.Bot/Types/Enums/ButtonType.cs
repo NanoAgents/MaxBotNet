@@ -34,10 +34,15 @@ public enum ButtonType
     RequestGeoLocation,
 
     /// <summary>
-    /// Open app button - opens a mini application.
+    /// Open app button - opens a mini application (<c>open_app</c>) set by <see cref="InlineKeyboardButton.WebApp"/>.
+    /// Without <see cref="InlineKeyboardButton.WebApp"/> the button is sent as a <c>link</c> for backward compatibility.
     /// </summary>
-    [Obsolete("MAX API currently accepts URL buttons as link. Use ButtonType.Link instead.")]
-    OpenApp
+    OpenApp,
+
+    /// <summary>
+    /// Clipboard button - copies <see cref="InlineKeyboardButton.Payload"/> to the user's clipboard.
+    /// </summary>
+    Clipboard
 }
 
 

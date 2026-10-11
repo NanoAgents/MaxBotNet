@@ -71,8 +71,8 @@ await client.Messages.SendMessageWithAttachmentAsync(AttachmentRequest.FromUploa
 ```
 
 Также доступны `AttachmentRequest.Image(token)`, `Video`, `Audio`, `File`, `Sticker`, `Contact`, `Location`, `Share` и `Keyboard`.
-Если MAX ещё обрабатывает только что загруженный файл, API отвечает `attachment.not.ready`: отправка/редактирование сообщения
-повторяются автоматически, а при исчерпании попыток выбрасывается `MaxAttachmentNotReadyException`.
+Если MAX ещё обрабатывает только что загруженный файл, API отвечает `attachment.not.ready`: `SendMessageAsync(SendMessageRequest)`,
+`SendMessageWithAttachment(s)Async` и `EditMessageAsync` с вложениями повторяют запрос автоматически, а при исчерпании попыток выбрасывается `MaxAttachmentNotReadyException`.
 
 ## 🔘 Callback-кнопки
 
@@ -105,6 +105,7 @@ await app.Services.GetRequiredService<MaxClient>().ConfigureWebhookAsync();
 ```
 
 Для MVC-проектов можно унаследоваться от абстрактного `WebhookController` и пометить наследника `[Route(...)]`.
+Секрет должен состоять из 5-256 символов `A-Z`, `a-z`, `0-9`, `_` и `-`; запросы без верного заголовка отклоняются ещё до чтения тела.
 
 ## 🧠 Архитектурные ориентиры
 

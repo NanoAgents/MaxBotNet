@@ -76,7 +76,10 @@ public interface IFilesApi
     /// <param name="chunkSize">The size of each chunk in bytes. Default is 1 MB.</param>
     /// <param name="fileName">The name of the file. Optional.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the upload result with a token.</returns>
+    /// <returns>
+    /// A task that represents the asynchronous operation. The task result contains the upload result.
+    /// For video and audio the CDN does not return a token — use <see cref="UploadResponse.Token"/> from <see cref="UploadFileAsync"/>.
+    /// </returns>
     /// <exception cref="ArgumentException">Thrown when uploadUrl is null or empty, fileStream is not readable, or chunkSize is less than or equal to zero.</exception>
     /// <exception cref="ArgumentNullException">Thrown when fileStream is null.</exception>
     /// <exception cref="Max.Bot.Exceptions.MaxApiException">Thrown when the upload fails.</exception>

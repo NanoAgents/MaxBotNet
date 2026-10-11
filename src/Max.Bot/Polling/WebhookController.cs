@@ -2,7 +2,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Max.Bot.Configuration;
-using Max.Bot.Types;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -30,7 +29,8 @@ namespace Max.Bot.Polling;
 /// </code>
 /// <para>
 /// <see cref="IUpdatePipeline"/> (for example a singleton <see cref="MaxClient"/>), <see cref="IUpdateHandler"/>
-/// and <see cref="MaxBotOptions"/> must be registered in the DI container.
+/// and <see cref="MaxBotOptions"/> must be registered in the DI container. The request body is read by the controller
+/// itself, after the size limit and the secret header have been checked.
 /// </para>
 /// </remarks>
 [ApiController]
@@ -57,24 +57,11 @@ public abstract class WebhookController : ControllerBase
     /// Handles incoming webhook updates.
     /// </summary>
     [HttpPost]
-    public virtual async Task<IActionResult> PostAsync([FromBody] Update update, CancellationToken cancellationToken)
+    public virtual async Task<IActionResult> PostAsync(CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
-        if (!WebhookRequestValidator.ValidatePayloadSize(Request, _options, _logger))
-        {
-            return StatusCode(StatusCodes.Status413PayloadTooLarge);
-        }
-
-        if (!WebhookRequestValidator.ValidateSignature(Request, _options, _logger))
-        {
-            return Unauthorized();
-        }
-
-        await _pipeline.ProcessWebhookAsync(update, _handler, HttpContext.RequestServices, cancellationToken).ConfigureAwait(false);
-        return Ok(new { success = true });
+        var statusCode = await WebhookRequestProcessor.ProcessAsync(HttpContext, _options, _pipeline, _handler, _logger).ConfigureAwait(false);
+        return statusCode == StatusCodes.Status200OK
+            ? Ok(new { success = true })
+            : StatusCode(statusCode);
     }
 }

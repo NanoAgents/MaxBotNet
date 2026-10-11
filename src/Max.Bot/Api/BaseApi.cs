@@ -134,7 +134,7 @@ internal abstract class BaseApi
             {
                 try
                 {
-                    var updatesResponse = MaxJsonSerializer.Deserialize<GetUpdatesResponse>(responseBody);
+                    var updatesResponse = GetUpdatesResponse.ParseTolerant(responseBody);
                     if (updatesResponse?.Updates != null)
                     {
                         return (T)(object)updatesResponse;

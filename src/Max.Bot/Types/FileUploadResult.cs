@@ -18,12 +18,35 @@ namespace Max.Bot.Types;
 /// </remarks>
 public class FileUploadResult
 {
+    private string? _token;
+    private bool _tokenDerivedFromPhotos;
+
     /// <summary>
     /// Gets or sets the uploaded media token that can be used in an attachment payload.
     /// </summary>
+    /// <remarks>
+    /// For image uploads it contains the first token from <see cref="Photos"/>. Such a derived token is not written
+    /// back when the result is serialized, because <c>token</c> and <c>photos</c> are mutually exclusive in an image payload.
+    /// </remarks>
+    [JsonIgnore]
+    public string? Token
+    {
+        get => _token;
+        set
+        {
+            _token = value;
+            _tokenDerivedFromPhotos = false;
+        }
+    }
+
+    [JsonInclude]
     [JsonPropertyName("token")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? Token { get; set; }
+    private string? SerializedToken
+    {
+        get => _tokenDerivedFromPhotos ? null : _token;
+        set => Token = value;
+    }
 
     /// <summary>
     /// Gets or sets the uploaded file identifier (returned for <c>file</c> uploads).
@@ -56,7 +79,8 @@ public class FileUploadResult
             return;
         }
 
-        Token = Photos.Values.Select(photo => photo?.Token).FirstOrDefault(token => !string.IsNullOrEmpty(token));
+        _token = Photos.Values.Select(photo => photo?.Token).FirstOrDefault(token => !string.IsNullOrEmpty(token));
+        _tokenDerivedFromPhotos = _token != null;
     }
 }
 

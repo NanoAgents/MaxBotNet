@@ -129,9 +129,19 @@ internal class MessagesApi : BaseApi, IMessagesApi
 
 
     /// <inheritdoc />
-    public async Task<Message> SendMessageAsync(SendMessageRequest request, long? chatId = null, long? userId = null, bool? disableLinkPreview = null, CancellationToken cancellationToken = default)
+    public Task<Message> SendMessageAsync(SendMessageRequest request, long? chatId = null, long? userId = null, bool? disableLinkPreview = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        var hasAttachments = request.Attachments is { Length: > 0 };
+        return ExecuteWithAttachmentRetryAsync(
+            hasAttachments,
+            () => SendMessageCoreAsync(request, chatId, userId, disableLinkPreview, cancellationToken),
+            cancellationToken);
+    }
+
+    private async Task<Message> SendMessageCoreAsync(SendMessageRequest request, long? chatId, long? userId, bool? disableLinkPreview, CancellationToken cancellationToken)
+    {
 
         // Validate that exactly one of chatId or userId is provided
         if (chatId.HasValue && userId.HasValue)
@@ -153,12 +163,12 @@ internal class MessagesApi : BaseApi, IMessagesApi
         var queryParams = new Dictionary<string, string?>();
         if (chatId.HasValue)
         {
-            queryParams["chat_id"] = chatId.Value.ToString();
+            queryParams["chat_id"] = chatId.Value.ToString(CultureInfo.InvariantCulture);
         }
 
         if (userId.HasValue)
         {
-            queryParams["user_id"] = userId.Value.ToString();
+            queryParams["user_id"] = userId.Value.ToString(CultureInfo.InvariantCulture);
         }
 
         if (disableLinkPreview.HasValue)
@@ -518,11 +528,8 @@ internal class MessagesApi : BaseApi, IMessagesApi
         bool? disableLinkPreview,
         CancellationToken cancellationToken)
     {
-        var hasAttachments = request.Attachments is { Length: > 0 };
-        return ExecuteWithAttachmentRetryAsync(
-            hasAttachments,
-            () => SendMessageAsync(request, chatId, userId, disableLinkPreview, cancellationToken),
-            cancellationToken);
+        // * SendMessageAsync(SendMessageRequest) already retries attachment.not.ready.
+        return SendMessageAsync(request, chatId, userId, disableLinkPreview, cancellationToken);
     }
 
     /// <summary>

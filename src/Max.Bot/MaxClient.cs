@@ -30,6 +30,11 @@ public class MaxClient : IMaxBotApi, IUpdatePipeline, IDisposable
     private readonly object _pollerLock = new();
     private UpdatePoller? _updatePoller;
 
+    /// <summary>
+    /// Gets the options this client was created with.
+    /// </summary>
+    internal MaxBotOptions Options => _options;
+
     /// <inheritdoc />
     public IBotApi Bot { get; }
 
@@ -208,12 +213,12 @@ public class MaxClient : IMaxBotApi, IUpdatePipeline, IDisposable
     /// <param name="updateTypes">Optional list of update types to receive. If null, all update types will be received.</param>
     /// <param name="secret">
     /// Optional secret that MAX sends back in the <c>X-Max-Bot-Api-Secret</c> header. When omitted,
-    /// <see cref="MaxWebhookOptions.SecretToken"/> is used; when provided and no secret is configured yet, it is stored there
-    /// so that incoming webhooks are validated against it.
+    /// <see cref="MaxWebhookOptions.SecretToken"/> is used; when provided, it replaces <see cref="MaxWebhookOptions.SecretToken"/>
+    /// after a successful subscription so that incoming webhooks are validated against the secret MAX actually sends.
     /// </param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the response with success status.</returns>
-    /// <exception cref="ArgumentException">Thrown when neither url nor <see cref="MaxWebhookOptions.Endpoint"/> is set, or the URL is invalid.</exception>
+    /// <exception cref="ArgumentException">Thrown when neither url nor <see cref="MaxWebhookOptions.Endpoint"/> is set, the URL is invalid, or the secret does not match the MAX format.</exception>
     public async Task<Response> ConfigureWebhookAsync(string? url = null, List<UpdateType>? updateTypes = null, string? secret = null, CancellationToken cancellationToken = default)
     {
         var webhookUrl = string.IsNullOrWhiteSpace(url) ? _options.Webhook.Endpoint : url;
@@ -233,6 +238,10 @@ public class MaxClient : IMaxBotApi, IUpdatePipeline, IDisposable
         }
 
         var webhookSecret = string.IsNullOrWhiteSpace(secret) ? _options.Webhook.SecretToken : secret;
+        if (!string.IsNullOrWhiteSpace(webhookSecret) && !MaxWebhookOptions.IsValidSecret(webhookSecret))
+        {
+            throw new ArgumentException("Webhook secret must be 5-256 characters long and contain only A-Z, a-z, 0-9, '_' and '-'.", nameof(secret));
+        }
 
         var request = new SetWebhookRequest
         {
@@ -242,9 +251,14 @@ public class MaxClient : IMaxBotApi, IUpdatePipeline, IDisposable
         };
 
         var response = await Subscriptions.SetWebhookAsync(request, cancellationToken).ConfigureAwait(false);
+        if (!response.Success)
+        {
+            return response;
+        }
 
+        // Keep incoming webhook validation in sync with the subscription that MAX now uses.
         _options.Webhook.Endpoint = webhookUrl;
-        if (!string.IsNullOrWhiteSpace(secret) && string.IsNullOrWhiteSpace(_options.Webhook.SecretToken))
+        if (!string.IsNullOrWhiteSpace(secret))
         {
             _options.Webhook.SecretToken = secret;
         }

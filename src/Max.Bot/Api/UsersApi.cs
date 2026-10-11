@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http;
 using Max.Bot.Configuration;
 using Max.Bot.Networking;
@@ -27,7 +28,7 @@ internal class UsersApi : BaseApi, IUsersApi
     {
         ValidateUserId(userId);
 
-        var request = CreateRequest(HttpMethod.Get, $"/users/{userId}");
+        var request = CreateRequest(HttpMethod.Get, string.Create(CultureInfo.InvariantCulture, $"/users/{userId}"));
         return await ExecuteRequestAsync<User>(request, cancellationToken).ConfigureAwait(false);
     }
 }

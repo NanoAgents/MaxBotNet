@@ -76,7 +76,17 @@ public class Update
     /// fills a partial <see cref="Types.Chat"/> with <see cref="Types.Chat.ChatId"/> and <see cref="Types.Chat.Type"/> taken from it.
     /// </remarks>
     [JsonIgnore]
-    public Chat? Chat { get; set; }
+    public Chat? Chat
+    {
+        get => _chat;
+        set
+        {
+            _chat = value;
+            IsChatInferred = false;
+        }
+    }
+
+    private Chat? _chat;
 
     /// <summary>
     /// Gets or sets the user who triggered the update.
@@ -100,14 +110,24 @@ public class Update
     /// chat_title_changed, message_removed, dialog_* events) or, for message updates, from <c>message.recipient.chat_id</c>.
     /// </remarks>
     [JsonIgnore]
-    public long? ChatId { get; set; }
+    public long? ChatId
+    {
+        get => _chatId;
+        set
+        {
+            _chatId = value;
+            IsChatIdInferred = false;
+        }
+    }
+
+    private long? _chatId;
 
     /// <summary>
     /// Gets the type of the chat where the update happened (dialog, chat or channel), if known.
     /// </summary>
     /// <remarks>
     /// Resolved from <see cref="Chat"/> or <c>message.recipient.chat_type</c>. For events that only carry
-    /// <c>is_channel</c> (bot_added, bot_removed, user_added, user_removed) a channel is reported as <see cref="Enums.ChatType.Channel"/>.
+    /// <c>is_channel</c> (bot_added, bot_removed, user_added, user_removed) it is <see cref="Enums.ChatType.Channel"/> or <see cref="Enums.ChatType.Chat"/>.
     /// </remarks>
     [JsonIgnore]
     public ChatType? ChatType
@@ -124,7 +144,13 @@ public class Update
                 return chatType;
             }
 
-            return IsChannel == true ? Enums.ChatType.Channel : null;
+            // * bot_added/bot_removed/user_added/user_removed happen only in group chats and channels.
+            return IsChannel switch
+            {
+                true => Enums.ChatType.Channel,
+                false => Enums.ChatType.Chat,
+                null => null
+            };
         }
     }
 
@@ -175,13 +201,32 @@ public class Update
     /// rather than received from MAX API.
     /// </summary>
     [JsonIgnore]
-    internal bool IsChatInferred { get; set; }
+    internal bool IsChatInferred { get; private set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether <see cref="ChatId"/> was taken from <c>message.recipient</c>.
     /// </summary>
     [JsonIgnore]
-    internal bool IsChatIdInferred { get; set; }
+    internal bool IsChatIdInferred { get; private set; }
+
+    /// <summary>
+    /// Fills <see cref="ChatId"/> and <see cref="Chat"/> from values inferred from <c>message.recipient</c>
+    /// without marking them as received from MAX API.
+    /// </summary>
+    internal void SetInferredChat(long? chatId, Chat? chat)
+    {
+        if (chatId.HasValue)
+        {
+            _chatId = chatId;
+            IsChatIdInferred = true;
+        }
+
+        if (chat != null)
+        {
+            _chat = chat;
+            IsChatInferred = true;
+        }
+    }
 
     /// <summary>
     /// Gets or sets whether the chat is muted.
@@ -559,6 +604,7 @@ public class Update
                 UserLocale = UserLocale,
                 Message = Message,
                 Chat = Chat,
+                ChatId = ChatId ?? Chat?.ChatId,
                 MessageId = MessageId,
                 StartPayload = Payload
             };

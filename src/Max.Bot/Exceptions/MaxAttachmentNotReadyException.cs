@@ -7,8 +7,9 @@ namespace Max.Bot.Exceptions;
 /// has not been processed yet (error code <c>attachment.not.ready</c>).
 /// </summary>
 /// <remarks>
-/// The request can be retried after a short delay. <c>SendMessageWithAttachmentAsync</c>,
-/// <c>SendMessageWithAttachmentsAsync</c> and <c>EditMessageAsync</c> already retry this error automatically.
+/// The request can be retried after a short delay. <c>SendMessageAsync(SendMessageRequest)</c>,
+/// <c>SendMessageWithAttachmentAsync</c>, <c>SendMessageWithAttachmentsAsync</c> and <c>EditMessageAsync</c> already retry
+/// this error automatically when the message has attachments; the exception is thrown when the retries are exhausted.
 /// </remarks>
 public class MaxAttachmentNotReadyException : MaxApiException
 {

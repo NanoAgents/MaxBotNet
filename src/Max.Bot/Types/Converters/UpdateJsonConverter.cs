@@ -116,27 +116,30 @@ public class UpdateJsonConverter : JsonConverter<Update>
     /// </summary>
     private static void InferChatFromMessage(Update update)
     {
+        if (update.ChatId == null && update.Chat != null)
+        {
+            // message_chat_created carries a full chat object but no chat_id.
+            update.SetInferredChat(update.Chat.ChatId, null);
+        }
+
         var recipient = update.Message?.Recipient;
         if (recipient?.ChatId is not { } recipientChatId)
         {
             return;
         }
 
-        if (update.ChatId == null)
-        {
-            update.ChatId = recipientChatId;
-            update.IsChatIdInferred = true;
-        }
-
+        var inferredChatId = update.ChatId == null ? recipientChatId : (long?)null;
+        Chat? inferredChat = null;
         if (update.Chat == null && Update.TryParseChatType(recipient.ChatType, out var chatType))
         {
-            update.Chat = new Chat
+            inferredChat = new Chat
             {
                 ChatId = recipientChatId,
                 Type = chatType
             };
-            update.IsChatInferred = true;
         }
+
+        update.SetInferredChat(inferredChatId, inferredChat);
     }
 
     private static long? GetInt64(JsonElement root, string propertyName)

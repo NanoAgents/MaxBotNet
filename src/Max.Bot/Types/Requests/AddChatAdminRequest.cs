@@ -21,9 +21,11 @@ public class AddChatAdminRequest
     /// Gets or sets the identifier of a single user to make an administrator.
     /// </summary>
     /// <remarks>
-    /// Convenience shortcut for a single administrator: setting it replaces <see cref="Admins"/> with one entry
-    /// that keeps the permissions of the previous first entry. Prefer <see cref="Admins"/> to set permissions explicitly.
+    /// Kept for backward compatibility: setting it replaces <see cref="Admins"/> with one entry that keeps the permissions
+    /// of the previous first entry. MAX API requires the list of permissions, so use <see cref="Admins"/> with
+    /// <see cref="ChatAdmin.Permissions"/> instead.
     /// </remarks>
+    [Obsolete("MAX API requires explicit permissions. Use Admins with ChatAdmin.Permissions instead.")]
     [JsonIgnore]
     [Range(1, long.MaxValue, ErrorMessage = "User ID must be greater than zero.")]
     public long UserId

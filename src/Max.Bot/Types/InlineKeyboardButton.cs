@@ -67,6 +67,25 @@ public class InlineKeyboardButton
     public ButtonIntent? Intent { get; set; }
 
     /// <summary>
+    /// Gets or sets the mini application to open (bot username or link) for <see cref="ButtonType.OpenApp"/> buttons.
+    /// </summary>
+    [JsonPropertyName("web_app")]
+    public string? WebApp { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier of the bot whose mini application is opened by an <see cref="ButtonType.OpenApp"/> button.
+    /// </summary>
+    [JsonPropertyName("contact_id")]
+    public long? ContactId { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether a <see cref="ButtonType.RequestGeoLocation"/> button sends the location
+    /// without asking the user for confirmation.
+    /// </summary>
+    [JsonPropertyName("quick")]
+    public bool? Quick { get; set; }
+
+    /// <summary>
     /// Gets or sets the callback data sent when the button is pressed.
     /// This property is for backward compatibility and automatically sets Type to Callback and Payload.
     /// </summary>

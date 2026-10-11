@@ -541,6 +541,11 @@ public class MessageChatCreatedUpdate
     public Chat? Chat { get; set; }
 
     /// <summary>
+    /// Gets or sets the identifier of the created chat.
+    /// </summary>
+    public long? ChatId { get; set; }
+
+    /// <summary>
     /// Gets or sets the identifier of the message where the button was clicked.
     /// </summary>
     public string? MessageId { get; set; }

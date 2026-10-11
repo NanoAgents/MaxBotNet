@@ -47,32 +47,43 @@ internal class FilesApi : BaseApi, IFilesApi
         ValidateNotEmpty(uploadUrl, nameof(uploadUrl));
         ArgumentNullException.ThrowIfNull(fileStream);
 
-        var initialPosition = fileStream.CanSeek ? fileStream.Position : -1;
-        var attempt = 0;
+        // A retry must send the whole file again. Non-seekable streams (network, pipes) are buffered once,
+        // as the official Go SDK does, so that every attempt can start from the beginning.
+        MemoryStream? bufferedStream = null;
+        if (!fileStream.CanSeek)
+        {
+            bufferedStream = new MemoryStream();
+            await fileStream.CopyToAsync(bufferedStream, cancellationToken).ConfigureAwait(false);
+            bufferedStream.Position = 0;
+        }
+
+        var uploadStream = bufferedStream ?? fileStream;
+        var initialPosition = uploadStream.Position;
 
         // Factory to create content for retries
         HttpContent CreateContent()
         {
-            if (attempt++ > 0)
-            {
-                // A retry must send the whole file again, so rewind the stream to where the first attempt started.
-                if (!fileStream.CanSeek)
-                {
-                    throw new InvalidOperationException("File upload failed and cannot be retried because the stream is not seekable.");
-                }
-
-                fileStream.Position = initialPosition;
-            }
+            uploadStream.Position = initialPosition;
 
             var content = new MultipartFormDataContent();
-            var streamContent = new StreamContent(new NonDisposingStreamWrapper(fileStream));
+            var streamContent = new StreamContent(new NonDisposingStreamWrapper(uploadStream));
             streamContent.Headers.ContentType = new MediaTypeHeaderValue(MimeTypes.FromFileName(fileName) ?? "application/octet-stream");
             content.Add(streamContent, "data", fileName ?? "file");
             return content;
         }
 
-        var responseBody = await HttpClient.SendAsyncRaw(uploadUrl, CreateContent, cancellationToken).ConfigureAwait(false);
-        return ParseUploadResponse(responseBody);
+        try
+        {
+            var responseBody = await HttpClient.SendAsyncRaw(uploadUrl, CreateContent, cancellationToken).ConfigureAwait(false);
+            return ParseUploadResponse(responseBody);
+        }
+        finally
+        {
+            if (bufferedStream != null)
+            {
+                await bufferedStream.DisposeAsync().ConfigureAwait(false);
+            }
+        }
     }
 
     public async Task<FileUploadResult> UploadAsync(UploadType uploadType, Stream fileStream, string? fileName = null, CancellationToken cancellationToken = default)
@@ -105,6 +116,7 @@ internal class FilesApi : BaseApi, IFilesApi
 
         var buffer = new byte[chunkSize];
         long totalBytesRead = 0;
+        string? lastResponseBody = null;
         long fileLength = fileStream.CanSeek ? fileStream.Length : -1;
 
         while (true)
@@ -134,10 +146,11 @@ internal class FilesApi : BaseApi, IFilesApi
             var responseBody = await HttpClient.SendAsyncRaw(uploadUrl, CreateChunkContent, cancellationToken).ConfigureAwait(false);
 
             totalBytesRead += bytesRead;
+            lastResponseBody = responseBody;
 
             // Check if this chunk's response already contains the token/result
             var result = ParseUploadResponse(responseBody);
-            if (result.Token != null)
+            if (result.Token != null || result.FileId != null)
             {
                 return result;
             }
@@ -145,7 +158,13 @@ internal class FilesApi : BaseApi, IFilesApi
             if (fileLength > 0 && totalBytesRead >= fileLength) break;
         }
 
-        // Finalize: If we reached here without a token, try a final GET
+        // * Video/audio CDN acknowledges chunks without a token (e.g. "<retval>1</retval>"): the token comes from POST /uploads.
+        if (!string.IsNullOrWhiteSpace(lastResponseBody))
+        {
+            return ParseUploadResponse(lastResponseBody);
+        }
+
+        // Finalize: If the server returned nothing for the chunks, try a final GET
         var finalResponseBody = await HttpClient.SendAsyncRaw(uploadUrl, null, cancellationToken, HttpMethod.Get).ConfigureAwait(false);
         return ParseUploadResponse(finalResponseBody);
     }
