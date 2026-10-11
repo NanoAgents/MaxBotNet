@@ -45,9 +45,11 @@ git push origin v0.6.1-alpha
 
 Tag format must stay `vX.Y.Z` or `vX.Y.Z-alpha`, because `.github/workflows/release.yml` derives `PackageVersion` from the tag name.
 
+Если пушить теги нельзя (например, из окружения без прав на теги), релиз можно запустить вручную: **Actions → Release → Run workflow** на ветке `main` с параметром `version` (например, `0.7.0-alpha`). Workflow проверит, что тега ещё нет, выполнит те же проверки и публикацию и сам создаст тег `v<version>` на выбранном коммите вместе с GitHub Release.
+
 ## 4. GitHub Actions release
 
-- Tag push triggers `.github/workflows/release.yml`.
+- Tag push (or a manual `workflow_dispatch` run with `version`) triggers `.github/workflows/release.yml`.
 - Workflow steps: restore → format → analyzers → build → tests → validate version/changelog → `dotnet pack` → upload artifacts → `dotnet nuget push` → GitHub Release.
 - Release notes are extracted from the matching `CHANGELOG.md` section.
 - NuGet publishing requires the `NUGET_API_KEY` secret.
