@@ -1,13 +1,19 @@
 # 📁 release.yml - NuGet publishing workflow
 # 🎯 Core function: Builds, tests, publishes packages, and creates GitHub releases on version tags
 # 🔗 Key dependencies: .NET 10/9/8 SDKs, NuGet.org feed, GitHub Releases
-# 💡 Usage: Triggered via git tags (v*), pushes packages automatically
+# 💡 Usage: Triggered via git tags (v*) or manually (workflow_dispatch with a version), pushes packages automatically
 name: Release
 
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, e.g. 0.7.0-alpha. Tag v<version> is created on the selected commit."
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -63,7 +69,21 @@ jobs:
       - name: Determine package version
         id: version
         shell: bash
-        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            VERSION="${INPUT_VERSION#v}"
+            if git ls-remote --exit-code --tags origin "refs/tags/v${VERSION}" > /dev/null; then
+              echo "::error::Tag v${VERSION} already exists. Push the tag instead of running the workflow manually."
+              exit 1
+            fi
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+
+          echo "value=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Validate release metadata
         shell: bash
@@ -169,9 +189,11 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: MaxMessenger.Bot ${{ github.ref_name }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: MaxMessenger.Bot ${{ steps.version.outputs.tag }}
           body_path: ${{ runner.temp }}/release-notes.md
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ contains(steps.version.outputs.value, '-') }}
           files: |
             ./nupkgs/*.nupkg
             ./nupkgs/*.snupkg
