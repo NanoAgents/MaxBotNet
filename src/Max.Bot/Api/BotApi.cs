@@ -45,7 +45,7 @@ internal class BotApi : BaseApi, IBotApi
             Commands = commands.ToArray()
         };
 
-        var request = CreateRequest(HttpMethod.Patch, "/me", updateRequest);
+        var request = CreateRequest(HttpMethod.Patch, "/me/commands", updateRequest);
         return await ExecuteRequestAsync<User>(request, cancellationToken).ConfigureAwait(false);
     }
 }
