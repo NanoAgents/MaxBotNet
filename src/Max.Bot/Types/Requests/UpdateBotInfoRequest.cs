@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Max.Bot.Types.Requests;
 
 /// <summary>
-/// Represents a request to update bot information via PATCH /me.
+/// Represents a request to update bot commands via PATCH /me/commands.
 /// </summary>
 public class UpdateBotInfoRequest
 {
