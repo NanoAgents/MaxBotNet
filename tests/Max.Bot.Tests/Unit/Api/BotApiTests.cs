@@ -245,7 +245,7 @@ public class BotApiTests
             .Setup(x => x.SendAsyncRaw(
                 It.Is<MaxApiRequest>(req =>
                     req.Method == HttpMethod.Patch &&
-                    req.Endpoint == "/me" &&
+                    req.Endpoint == "/me/commands" &&
                     req.Headers != null &&
                     req.Headers.ContainsKey("Authorization") &&
                     req.Headers["Authorization"] == "test-token-123" &&
@@ -267,7 +267,7 @@ public class BotApiTests
             x => x.SendAsyncRaw(
                 It.Is<MaxApiRequest>(req =>
                     req.Method == HttpMethod.Patch &&
-                    req.Endpoint == "/me"),
+                    req.Endpoint == "/me/commands"),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }
