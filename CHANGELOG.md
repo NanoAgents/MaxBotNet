@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1-alpha] - 2026-10-27
+
+### Fixed
+
+- **Bot commands** (#41, #42): `SetCommandsAsync` отправляет запрос на `PATCH /me/commands` вместо `PATCH /me` — MAX больше не принимает `PATCH /me` и отвечал `Path /me is not recognized`. Эндпоинт отвечает только списком команд, поэтому в возвращаемом `User` заполнено лишь `Commands`. Спасибо @diquoks!
+
 ## [0.7.0-alpha] - 2026-10-11
 
 Ревью всей библиотеки на соответствие MAX Bot API (схемы официального Go SDK `max-bot-api-client-go`) и исправление открытых issue.
@@ -383,7 +389,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/NanoAgents/MaxBotNet/compare/v0.7.0-alpha...HEAD
+[Unreleased]: https://github.com/NanoAgents/MaxBotNet/compare/v0.7.1-alpha...HEAD
+[0.7.1-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.7.0-alpha...v0.7.1-alpha
 [0.7.0-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.6.3-alpha...v0.7.0-alpha
 [0.6.3-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.6.2-alpha...v0.6.3-alpha
 [0.6.2-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.6.1-alpha...v0.6.2-alpha

@@ -37,14 +37,14 @@ public interface IBotApi
     /// </summary>
     /// <param name="commands">The collection of commands to set.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the updated bot user information.</returns>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the updated bot commands in <see cref="User.Commands"/>; other <see cref="User"/> properties are not returned by this endpoint.</returns>
     /// <exception cref="ArgumentNullException">Thrown when commands is null.</exception>
     /// <exception cref="Max.Bot.Exceptions.MaxApiException">Thrown when the API returns an error response.</exception>
     /// <exception cref="Max.Bot.Exceptions.MaxNetworkException">Thrown when a network error occurs.</exception>
     /// <exception cref="Max.Bot.Exceptions.MaxUnauthorizedException">Thrown when authentication fails.</exception>
     /// <remarks>
-    /// <para>This method uses the PATCH /me endpoint to update bot commands.</para>
-    /// <para>See: https://dev.max.ru/docs-api/methods/PATCH/me</para>
+    /// <para>This method uses the PATCH /me/commands endpoint to update bot commands.</para>
+    /// <para>See: https://dev.max.ru/docs-api/methods/PATCH/me/commands</para>
     /// </remarks>
     Task<User> SetCommandsAsync(IEnumerable<BotCommand> commands, CancellationToken cancellationToken = default);
 }
