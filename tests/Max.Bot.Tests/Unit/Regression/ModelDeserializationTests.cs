@@ -130,6 +130,16 @@ public class ModelDeserializationTests
     }
 
     [Fact]
+    public void NullableEnumProperties_ShouldUseSnakeCase_WithDefaultOptions()
+    {
+        var json = JsonSerializer.Serialize(new Max.Bot.Types.Requests.SendMessageRequest { Text = "hi", Format = TextFormat.Html });
+        json.Should().Contain("\"format\":\"html\"");
+
+        var action = JsonSerializer.Serialize(new Max.Bot.Types.Requests.SendChatActionRequest { Action = ChatAction.TypingOn });
+        action.Should().Be("""{"action":"typing_on"}""");
+    }
+
+    [Fact]
     public void UpdateType_ShouldReadApiString_WithDefaultOptions()
     {
         JsonSerializer.Deserialize<UpdateType>("\"message_callback\"").Should().Be(UpdateType.MessageCallback);
