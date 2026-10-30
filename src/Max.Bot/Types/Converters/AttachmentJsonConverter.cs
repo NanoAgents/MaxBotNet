@@ -39,7 +39,7 @@ public class AttachmentJsonConverter : JsonConverter<Attachment>
         // Route by type name — primary and most reliable method
         if (IsType(typeString, AttachmentTypeNames.InlineKeyboard))
         {
-            return JsonSerializer.Deserialize<InlineKeyboardAttachment>(root.GetRawText(), options);
+            return DeserializeInlineKeyboard(root, options);
         }
 
         if (IsType(typeString, AttachmentTypeNames.Image))
@@ -82,6 +82,11 @@ public class AttachmentJsonConverter : JsonConverter<Attachment>
             return DeserializeMerged<ShareAttachment>(root, typeString, null, options);
         }
 
+        if (IsType(typeString, AttachmentTypeNames.Data))
+        {
+            return DeserializeMerged<DataAttachment>(root, typeString, null, options);
+        }
+
         // Fallback for unknown types — use DocumentAttachment as it has the most generic fields (url, token)
         return DeserializeMerged<DocumentAttachment>(root, typeString, null, options);
     }
@@ -118,9 +123,34 @@ public class AttachmentJsonConverter : JsonConverter<Attachment>
             case ShareAttachment shareAttachment:
                 JsonSerializer.Serialize(writer, shareAttachment, options);
                 break;
+            case DataAttachment dataAttachment:
+                JsonSerializer.Serialize(writer, dataAttachment, options);
+                break;
             default:
                 throw new JsonException($"Unknown attachment type: {value.GetType()}");
         }
+    }
+
+    /// <summary>
+    /// Inline keyboard keeps its buttons nested in <c>payload</c>, so it is deserialized as is (without merging).
+    /// A malformed keyboard yields an empty <see cref="InlineKeyboardAttachment"/> instead of breaking the whole message.
+    /// </summary>
+    private static InlineKeyboardAttachment DeserializeInlineKeyboard(JsonElement root, JsonSerializerOptions options)
+    {
+        InlineKeyboardAttachment? attachment;
+        try
+        {
+            attachment = root.Deserialize<InlineKeyboardAttachment>(options);
+        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
+        {
+            attachment = null;
+        }
+
+        attachment ??= new InlineKeyboardAttachment();
+        attachment.Payload ??= new InlineKeyboard();
+        attachment.Type = AttachmentTypeNames.InlineKeyboard;
+        return attachment;
     }
 
     /// <summary>

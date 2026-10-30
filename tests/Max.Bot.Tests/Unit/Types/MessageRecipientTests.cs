@@ -6,6 +6,7 @@
 using FluentAssertions;
 using Max.Bot.Networking;
 using Max.Bot.Types;
+using Max.Bot.Types.Enums;
 
 namespace Max.Bot.Tests.Unit.Types;
 
@@ -23,7 +24,7 @@ public class MessageRecipientTests
         // Assert
         result.Should().NotBeNull();
         result!.ChatId.Should().Be(0);
-        result.ChatType.Should().Be("dialog");
+        result.ChatType.Should().Be(ChatType.Dialog);
         result.UserId.Should().Be(12345);
     }
 
@@ -39,7 +40,7 @@ public class MessageRecipientTests
         // Assert
         result.Should().NotBeNull();
         result!.ChatId.Should().BeNull();
-        result.ChatType.Should().Be("dialog");
+        result.ChatType.Should().Be(ChatType.Dialog);
         result.UserId.Should().Be(67890);
     }
 
@@ -55,7 +56,7 @@ public class MessageRecipientTests
         // Assert
         result.Should().NotBeNull();
         result!.ChatId.Should().Be(987654321);
-        result.ChatType.Should().Be("chat");
+        result.ChatType.Should().Be(ChatType.Chat);
     }
 
     [Fact]
@@ -85,7 +86,7 @@ public class MessageRecipientTests
         // Assert
         result.Should().NotBeNull();
         result!.ChatId.Should().Be(123456);
-        result.ChatType.Should().Be("chat");
+        result.ChatType.Should().Be(ChatType.Chat);
         result.UserId.Should().BeNull();
     }
 
@@ -96,7 +97,7 @@ public class MessageRecipientTests
         var recipient = new MessageRecipient
         {
             ChatId = 0,
-            ChatType = "dialog",
+            ChatType = ChatType.Dialog,
             UserId = 12345
         };
 
@@ -116,7 +117,7 @@ public class MessageRecipientTests
         // Arrange
         var recipient = new MessageRecipient
         {
-            ChatType = "dialog",
+            ChatType = ChatType.Dialog,
             UserId = 67890
         };
 
@@ -137,7 +138,7 @@ public class MessageRecipientTests
         var recipient = new MessageRecipient
         {
             ChatId = 987654321,
-            ChatType = "chat"
+            ChatType = ChatType.Chat
         };
 
         // Act

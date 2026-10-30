@@ -1,11 +1,12 @@
 using System.Text.Json.Serialization;
+using Max.Bot.Types.Converters;
 
 namespace Max.Bot.Types.Enums;
 
 /// <summary>
 /// Represents the text format for message content.
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonSnakeCaseEnumConverter<TextFormat>))]
 public enum TextFormat
 {
     /// <summary>
@@ -18,9 +19,3 @@ public enum TextFormat
     /// </summary>
     Html
 }
-
-
-
-
-
-

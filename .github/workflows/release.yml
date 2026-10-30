@@ -14,6 +14,11 @@ on:
         description: "Version to release, e.g. 0.7.0-alpha. Tag v<version> is created on the selected commit."
         required: true
         type: string
+      latest:
+        description: "Mark the GitHub release as Latest. Uncheck to publish it as a pre-release instead."
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: write
@@ -193,7 +198,9 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: MaxMessenger.Bot ${{ steps.version.outputs.tag }}
           body_path: ${{ runner.temp }}/release-notes.md
-          prerelease: ${{ contains(steps.version.outputs.value, '-') }}
+          # * Alpha versions are the project's regular releases, so they are published as Latest too.
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && !inputs.latest }}
+          make_latest: ${{ github.event_name != 'workflow_dispatch' || inputs.latest }}
           files: |
             ./nupkgs/*.nupkg
             ./nupkgs/*.snupkg

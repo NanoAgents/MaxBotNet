@@ -15,7 +15,7 @@ public class GetUpdatesResponse
     /// </summary>
     /// <value>The list of updates.</value>
     [JsonPropertyName("updates")]
-    public Update[] Updates { get; set; } = default!;
+    public Update[] Updates { get; set; } = Array.Empty<Update>();
 
     /// <summary>
     /// Gets or sets the marker for the next page of updates.

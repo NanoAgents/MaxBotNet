@@ -79,9 +79,36 @@ await client.Messages.SendMessageWithAttachmentAsync(AttachmentRequest.FromUploa
 ```csharp
 var callback = update.Callback!;
 await client.Messages.AnswerCallbackQueryAsync(
-    callback.CallbackId!,
+    callback.CallbackId,
     new AnswerCallbackQueryRequest { Notification = "Принято!" });
 ```
+
+## 🧾 Типизированные модели
+
+Модели повторяют [OpenAPI-схему MAX Bot API](https://github.com/max-messenger/max-bot-api-client-go/blob/main/schema.yaml):
+обязательные поля не nullable (`Message.Recipient`, `Message.Timestamp`, `MessageBody.Mid`, `CallbackQuery.CallbackId`, `User.FirstName`, …),
+а строковые значения API разобраны в enum'ы.
+
+```csharp
+var message = update.Message!;
+if (message.Link?.Type == MessageLinkType.Reply)            // "forward" | "reply"
+{
+    Console.WriteLine($"Ответ на {message.Link.Mid}");
+}
+
+var chatType = message.Recipient.ChatType;                  // ChatType.Dialog | Chat | Channel
+var mentions = message.Body?.Markup?.Where(m => m.Type == MarkupType.UserMention);
+
+foreach (var keyboard in message.Body?.Attachments?.OfType<InlineKeyboardAttachment>() ?? [])
+{
+    var buttons = keyboard.Buttons;                         // InlineKeyboardButton[][] вместо словаря
+}
+```
+
+Все enum'ы помечены конвертером snake_case, поэтому модели и enum'ы разбираются и обычным `JsonSerializer` без
+`MaxJsonSerializer.Options`: `JsonSerializer.Deserialize<MessageLinkType>("\"reply\"")` вернёт `MessageLinkType.Reply`.
+Если MAX пришлёт значение, неизвестное текущей версии библиотеки, nullable-поля вроде `LinkedMessage.Type` и
+`MessageRecipient.ChatType` станут `null`, а не уронят разбор всего апдейта.
 
 ## 🌐 Webhook
 
@@ -117,7 +144,7 @@ await app.Services.GetRequiredService<MaxClient>().ConfigureWebhookAsync();
 ## 🧪 Тесты и качество
 
 - `dotnet build -warnaserror` — проверяет, что все публичные API имеют XML-доки.
-- `dotnet test` — 690+ модульных тестов, включая регрессионные тесты по issue и проверки сериализации на реальных ответах MAX API.
+- `dotnet test` — 760+ модульных тестов, включая регрессионные тесты по issue и проверки сериализации на реальных ответах MAX API.
 - GitHub Actions workflow `.github/workflows/ci.yml` (Ubuntu + Windows) гоняет форматирование, `dotnet format analyzers`, покрытие (минимум 60 % линий, целимся в 85 %) и `dotnet pack`, загружая артефакты для ревью.
 - Smoke-тесты для примеров используют `LoopbackSampleRuntime` и проходят весь `SampleRegistry`, повторяя подход Telegram.Bot и VkNet к офлайн-интеграциям, чтобы код примеров и документация не расходились.
 - Фикстуры API (`tests/Max.Bot.Tests/Integration/Fixtures`) помогают детерминированно воспроизводить ответы `/subscriptions` и `/updates` без реального HTTP.

@@ -1,10 +1,13 @@
+using System.Text.Json.Serialization;
+using Max.Bot.Types.Converters;
+
 namespace Max.Bot.Types.Enums;
 
 /// <summary>
 /// Represents chat admin permissions returned by the MAX API.
-/// Serialized as snake_case by <see cref="Max.Bot.Networking.MaxJsonSerializer"/>
-/// (global <c>JsonStringEnumConverter</c> with <c>SnakeCaseLower</c> policy).
+/// Serialized as snake_case (<see cref="JsonSnakeCaseEnumConverter{TEnum}"/>).
 /// </summary>
+[JsonConverter(typeof(JsonSnakeCaseEnumConverter<ChatAdminPermission>))]
 public enum ChatAdminPermission
 {
     /// <summary>

@@ -4,6 +4,7 @@
 // 💡 Usage: Used by Chat and other chat-related payloads.
 
 using System.Text.Json.Serialization;
+using Max.Bot.Types.Converters;
 
 namespace Max.Bot.Types.Enums;
 
@@ -11,24 +12,21 @@ namespace Max.Bot.Types.Enums;
 /// Represents the type of a chat.
 /// Maps to the official Max API chat type values.
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonSnakeCaseEnumConverter<ChatType>))]
 public enum ChatType
 {
     /// <summary>
     /// Group chat (type: "chat").
     /// </summary>
-    [JsonPropertyName("chat")]
     Chat,
 
     /// <summary>
     /// Private dialog with a user (type: "dialog").
     /// </summary>
-    [JsonPropertyName("dialog")]
     Dialog,
 
     /// <summary>
     /// Channel (type: "channel").
     /// </summary>
-    [JsonPropertyName("channel")]
     Channel,
 }

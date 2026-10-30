@@ -36,7 +36,7 @@ public class Update
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
     [JsonPropertyName("timestamp")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the user locale for this update.
@@ -139,7 +139,7 @@ public class Update
                 return Chat.Type;
             }
 
-            if (TryParseChatType(Message?.Recipient?.ChatType, out var chatType))
+            if (Message?.Recipient?.ChatType is { } chatType)
             {
                 return chatType;
             }
@@ -325,9 +325,9 @@ public class Update
                 Timestamp = Timestamp,
                 UserLocale = UserLocale,
                 Message = Message,
-                MessageId = MessageId ?? Message?.Mid,
-                ChatId = ChatId,
-                UserId = UserId
+                MessageId = MessageId ?? Message?.Mid ?? string.Empty,
+                ChatId = ChatId ?? 0,
+                UserId = UserId ?? 0
             };
         }
     }
@@ -348,10 +348,10 @@ public class Update
                 UpdateId = UpdateId,
                 Timestamp = Timestamp,
                 Chat = Chat,
-                ChatId = ChatId ?? Chat?.ChatId,
-                User = User,
+                ChatId = ChatId ?? Chat?.ChatId ?? 0,
+                User = User ?? new User(),
                 InviterId = InviterId,
-                IsChannel = IsChannel
+                IsChannel = IsChannel ?? false
             };
         }
     }
@@ -372,9 +372,9 @@ public class Update
                 UpdateId = UpdateId,
                 Timestamp = Timestamp,
                 Chat = Chat,
-                ChatId = ChatId ?? Chat?.ChatId,
-                User = User,
-                IsChannel = IsChannel
+                ChatId = ChatId ?? Chat?.ChatId ?? 0,
+                User = User ?? new User(),
+                IsChannel = IsChannel ?? false
             };
         }
     }
@@ -394,8 +394,8 @@ public class Update
             {
                 UpdateId = UpdateId,
                 Timestamp = Timestamp,
-                ChatId = ChatId,
-                User = User,
+                ChatId = ChatId ?? 0,
+                User = User ?? new User(),
                 UserLocale = UserLocale,
                 Payload = Payload
             };
@@ -417,8 +417,8 @@ public class Update
             {
                 UpdateId = UpdateId,
                 Timestamp = Timestamp,
-                ChatId = ChatId,
-                User = User,
+                ChatId = ChatId ?? 0,
+                User = User ?? new User(),
                 UserLocale = UserLocale
             };
         }
@@ -440,10 +440,10 @@ public class Update
                 UpdateId = UpdateId,
                 Timestamp = Timestamp,
                 Chat = Chat,
-                ChatId = ChatId ?? Chat?.ChatId,
-                User = User,
+                ChatId = ChatId ?? Chat?.ChatId ?? 0,
+                User = User ?? new User(),
                 InviterId = InviterId,
-                IsChannel = IsChannel
+                IsChannel = IsChannel ?? false
             };
         }
     }
@@ -464,10 +464,10 @@ public class Update
                 UpdateId = UpdateId,
                 Timestamp = Timestamp,
                 Chat = Chat,
-                ChatId = ChatId ?? Chat?.ChatId,
-                User = User,
+                ChatId = ChatId ?? Chat?.ChatId ?? 0,
+                User = User ?? new User(),
                 AdminId = AdminId,
-                IsChannel = IsChannel
+                IsChannel = IsChannel ?? false
             };
         }
     }
@@ -488,9 +488,9 @@ public class Update
                 UpdateId = UpdateId,
                 Timestamp = Timestamp,
                 Chat = Chat,
-                ChatId = ChatId ?? Chat?.ChatId,
-                User = User,
-                Title = Title ?? Chat?.Title
+                ChatId = ChatId ?? Chat?.ChatId ?? 0,
+                User = User ?? new User(),
+                Title = Title ?? Chat?.Title ?? string.Empty
             };
         }
     }
@@ -510,10 +510,10 @@ public class Update
             {
                 UpdateId = UpdateId,
                 Timestamp = Timestamp,
-                ChatId = ChatId,
+                ChatId = ChatId ?? 0,
                 IsMuted = IsMuted,
-                MutedUntil = MutedUntil,
-                User = User,
+                MutedUntil = MutedUntil ?? 0,
+                User = User ?? new User(),
                 UserLocale = UserLocale
             };
         }
@@ -534,9 +534,9 @@ public class Update
             {
                 UpdateId = UpdateId,
                 Timestamp = Timestamp,
-                ChatId = ChatId,
+                ChatId = ChatId ?? 0,
                 IsMuted = IsMuted,
-                User = User,
+                User = User ?? new User(),
                 UserLocale = UserLocale
             };
         }
@@ -557,8 +557,8 @@ public class Update
             {
                 UpdateId = UpdateId,
                 Timestamp = Timestamp,
-                ChatId = ChatId,
-                User = User,
+                ChatId = ChatId ?? 0,
+                User = User ?? new User(),
                 UserLocale = UserLocale
             };
         }
@@ -579,8 +579,8 @@ public class Update
             {
                 UpdateId = UpdateId,
                 Timestamp = Timestamp,
-                ChatId = ChatId,
-                User = User,
+                ChatId = ChatId ?? 0,
+                User = User ?? new User(),
                 UserLocale = UserLocale
             };
         }
@@ -603,34 +603,15 @@ public class Update
                 Timestamp = Timestamp,
                 UserLocale = UserLocale,
                 Message = Message,
-                Chat = Chat,
-                ChatId = ChatId ?? Chat?.ChatId,
-                MessageId = MessageId,
+                Chat = Chat ?? new Chat(),
+                ChatId = ChatId ?? Chat?.ChatId ?? 0,
+                MessageId = MessageId ?? string.Empty,
                 StartPayload = Payload
             };
         }
     }
 
     #endregion
-
-    internal static bool TryParseChatType(string? value, out ChatType chatType)
-    {
-        switch (value?.Trim().ToLowerInvariant())
-        {
-            case "dialog":
-                chatType = Enums.ChatType.Dialog;
-                return true;
-            case "chat":
-                chatType = Enums.ChatType.Chat;
-                return true;
-            case "channel":
-                chatType = Enums.ChatType.Channel;
-                return true;
-            default:
-                chatType = default;
-                return false;
-        }
-    }
 
     /// <summary>
     /// Parses the raw update_type string to UpdateType enum.

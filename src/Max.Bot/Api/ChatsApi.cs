@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using Max.Bot.Configuration;
@@ -226,16 +227,48 @@ internal class ChatsApi : BaseApi, IChatsApi
     }
 
     /// <inheritdoc />
-    public async Task<Response> AddChatMembersAsync(long chatId, AddChatMembersRequest request, CancellationToken cancellationToken = default)
+    public async Task<ChatMember[]> GetChatMembersByIdsAsync(long chatId, IEnumerable<long> userIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(userIds);
+
+        var ids = userIds.Distinct().Select(id => id.ToString(CultureInfo.InvariantCulture)).ToArray();
+        if (ids.Length == 0)
+        {
+            throw new ArgumentException("At least one user ID must be provided.", nameof(userIds));
+        }
+
+        var queryParams = new Dictionary<string, string?>
+        {
+            { "user_ids", string.Join(",", ids) }
+        };
+
+        var request = CreateRequest(HttpMethod.Get, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}/members"), null, queryParams);
+        var response = await ExecuteRequestAsync<ChatMembersResponse>(request, cancellationToken).ConfigureAwait(false);
+        return response.Members ?? [];
+    }
+
+    /// <inheritdoc />
+    public async Task<ModifyMembersResponse> AddChatMembersAsync(long chatId, AddChatMembersRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         var apiRequest = CreateRequest(HttpMethod.Post, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}/members"), request);
-        return await ExecuteRequestAsync<Response>(apiRequest, cancellationToken).ConfigureAwait(false);
+        return await ExecuteRequestAsync<ModifyMembersResponse>(apiRequest, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
-    public async Task<Response> RemoveChatMemberAsync(long chatId, long userId, CancellationToken cancellationToken = default)
+    public Task<Response> RemoveChatMemberAsync(long chatId, long userId, CancellationToken cancellationToken = default)
+    {
+        return RemoveChatMemberCoreAsync(chatId, userId, null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<Response> RemoveChatMemberAsync(long chatId, long userId, bool block, CancellationToken cancellationToken = default)
+    {
+        return RemoveChatMemberCoreAsync(chatId, userId, block, cancellationToken);
+    }
+
+    private async Task<Response> RemoveChatMemberCoreAsync(long chatId, long userId, bool? block, CancellationToken cancellationToken)
     {
         ValidateUserIdStrict(userId);
 
@@ -243,6 +276,11 @@ internal class ChatsApi : BaseApi, IChatsApi
         {
             { "user_id", userId.ToString(CultureInfo.InvariantCulture) }
         };
+
+        if (block == true)
+        {
+            queryParams["block"] = "true";
+        }
 
         var request = CreateRequest(HttpMethod.Delete, string.Create(CultureInfo.InvariantCulture, $"/chats/{chatId}/members"), null, queryParams);
         return await ExecuteRequestAsync<Response>(request, cancellationToken).ConfigureAwait(false);

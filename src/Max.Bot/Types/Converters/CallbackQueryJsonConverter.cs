@@ -28,19 +28,19 @@ public class CallbackQueryJsonConverter : JsonConverter<CallbackQuery>
         var callbackQuery = new CallbackQuery();
 
         // Read callback_id (API format)
-        if (root.TryGetProperty("callback_id", out var callbackIdElement))
+        if (root.TryGetProperty("callback_id", out var callbackIdElement) && callbackIdElement.ValueKind == JsonValueKind.String)
         {
-            callbackQuery.CallbackId = callbackIdElement.GetString();
+            callbackQuery.CallbackId = callbackIdElement.GetString() ?? string.Empty;
         }
 
         // Read user (API format)
-        if (root.TryGetProperty("user", out var userElement))
+        if (root.TryGetProperty("user", out var userElement) && userElement.ValueKind == JsonValueKind.Object)
         {
-            callbackQuery.User = JsonSerializer.Deserialize<User>(userElement.GetRawText(), options);
+            callbackQuery.User = userElement.Deserialize<User>(options) ?? new User();
         }
 
         // Read payload (API format)
-        if (root.TryGetProperty("payload", out var payloadElement))
+        if (root.TryGetProperty("payload", out var payloadElement) && payloadElement.ValueKind != JsonValueKind.Null)
         {
             callbackQuery.Payload = payloadElement.ValueKind == JsonValueKind.String
                 ? payloadElement.GetString()
@@ -48,9 +48,11 @@ public class CallbackQueryJsonConverter : JsonConverter<CallbackQuery>
         }
 
         // Read timestamp
-        if (root.TryGetProperty("timestamp", out var timestampElement))
+        if (root.TryGetProperty("timestamp", out var timestampElement) &&
+            timestampElement.ValueKind == JsonValueKind.Number &&
+            timestampElement.TryGetInt64(out var timestamp))
         {
-            callbackQuery.Timestamp = timestampElement.GetInt64();
+            callbackQuery.Timestamp = timestamp;
         }
 
         return callbackQuery;
@@ -62,10 +64,7 @@ public class CallbackQueryJsonConverter : JsonConverter<CallbackQuery>
         writer.WriteStartObject();
 
         // Write callback_id (API format)
-        if (value.CallbackId != null)
-        {
-            writer.WriteString("callback_id", value.CallbackId);
-        }
+        writer.WriteString("callback_id", value.CallbackId ?? string.Empty);
 
         // Write user (API format)
         if (value.User != null)
@@ -80,11 +79,7 @@ public class CallbackQueryJsonConverter : JsonConverter<CallbackQuery>
             writer.WriteString("payload", value.Payload);
         }
 
-        // Write timestamp if present
-        if (value.Timestamp.HasValue)
-        {
-            writer.WriteNumber("timestamp", value.Timestamp.Value);
-        }
+        writer.WriteNumber("timestamp", value.Timestamp);
 
         writer.WriteEndObject();
     }

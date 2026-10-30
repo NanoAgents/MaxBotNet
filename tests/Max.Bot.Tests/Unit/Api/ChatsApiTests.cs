@@ -803,16 +803,14 @@ public class ChatsApiTests
         // Arrange
         var chatId = 123456L;
         var request = new AddChatMembersRequest { UserIds = new[] { 100L, 200L } };
-        var expectedResponse = new Response { Success = true };
-
         _mockHttpClient
-            .Setup(x => x.SendAsync<Response>(
+            .Setup(x => x.SendAsyncRaw(
                 It.Is<MaxApiRequest>(req =>
                     req.Method == HttpMethod.Post &&
                     req.Endpoint == $"/chats/{chatId}/members" &&
                     req.Body != null),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedResponse);
+            .ReturnsAsync("""{"success":true,"failed_user_ids":[200]}""");
 
         var chatsApi = new ChatsApi(_mockHttpClient.Object, _options);
 
@@ -822,6 +820,7 @@ public class ChatsApiTests
         // Assert
         result.Should().NotBeNull();
         result.Success.Should().BeTrue();
+        result.FailedUserIds.Should().Equal(200L);
     }
 
     [Fact]
@@ -885,6 +884,73 @@ public class ChatsApiTests
         // Assert
         await act.Should().ThrowAsync<ArgumentException>()
             .WithParameterName("userId");
+    }
+
+    [Theory]
+    [InlineData(true, "true")]
+    [InlineData(false, null)]
+    public async Task RemoveChatMemberAsync_WithBlock_ShouldPassBlockQueryParameter(bool block, string? expectedBlock)
+    {
+        // Arrange
+        MaxApiRequest? captured = null;
+        _mockHttpClient
+            .Setup(x => x.SendAsync<Response>(It.IsAny<MaxApiRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<MaxApiRequest, CancellationToken>((req, _) => captured = req)
+            .ReturnsAsync(new Response { Success = true });
+
+        var chatsApi = new ChatsApi(_mockHttpClient.Object, _options);
+
+        // Act
+        var result = await chatsApi.RemoveChatMemberAsync(-100L, 789L, block);
+
+        // Assert
+        result.Success.Should().BeTrue();
+        captured.Should().NotBeNull();
+        captured!.Method.Should().Be(HttpMethod.Delete);
+        captured.Endpoint.Should().Be("/chats/-100/members");
+        captured.QueryParameters!["user_id"].Should().Be("789");
+        captured.QueryParameters.GetValueOrDefault("block").Should().Be(expectedBlock);
+    }
+
+    #endregion
+
+    #region GetChatMembersByIdsAsync Tests
+
+    [Fact]
+    public async Task GetChatMembersByIdsAsync_ShouldPassCommaSeparatedUserIds()
+    {
+        // Arrange
+        MaxApiRequest? captured = null;
+        _mockHttpClient
+            .Setup(x => x.SendAsyncRaw(It.IsAny<MaxApiRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<MaxApiRequest, CancellationToken>((req, _) => captured = req)
+            .ReturnsAsync("""{"members":[{"user_id":1},{"user_id":2}],"marker":null}""");
+
+        var chatsApi = new ChatsApi(_mockHttpClient.Object, _options);
+
+        // Act
+        var result = await chatsApi.GetChatMembersByIdsAsync(123L, new[] { 1L, 2L, 2L });
+
+        // Assert
+        result.Select(m => m.Id).Should().Equal(1L, 2L);
+        captured.Should().NotBeNull();
+        captured!.Method.Should().Be(HttpMethod.Get);
+        captured.Endpoint.Should().Be("/chats/123/members");
+        captured.QueryParameters!["user_ids"].Should().Be("1,2");
+        captured.QueryParameters.Should().NotContainKey("marker");
+    }
+
+    [Fact]
+    public async Task GetChatMembersByIdsAsync_ShouldThrow_WhenUserIdsAreEmpty()
+    {
+        // Arrange
+        var chatsApi = new ChatsApi(_mockHttpClient.Object, _options);
+
+        // Act
+        var act = async () => await chatsApi.GetChatMembersByIdsAsync(123L, Array.Empty<long>());
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>().WithParameterName("userIds");
     }
 
     #endregion

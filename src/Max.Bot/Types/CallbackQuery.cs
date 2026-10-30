@@ -14,10 +14,10 @@ public class CallbackQuery
     /// Gets or sets the callback ID (current keyboard ID).
     /// This property maps to "callback_id" field from API.
     /// </summary>
-    /// <value>The callback ID, or null if not available.</value>
+    /// <value>The callback ID. Always sent by MAX API; pass it to <c>AnswerCallbackQueryAsync</c>.</value>
     [StringLength(512, ErrorMessage = "Callback ID must not exceed 512 characters.")]
     [JsonIgnore]
-    public string? CallbackId { get; set; }
+    public string CallbackId { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the user who pressed the button.
@@ -26,7 +26,7 @@ public class CallbackQuery
     /// <value>The user who pressed the button.</value>
     [Required(ErrorMessage = "User is required.")]
     [JsonIgnore]
-    public User? User { get; set; }
+    public User User { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the message with the inline button that was pressed.
@@ -48,9 +48,9 @@ public class CallbackQuery
     /// <summary>
     /// Gets or sets the timestamp when the user pressed the button (Unix timestamp in milliseconds).
     /// </summary>
-    /// <value>The timestamp when the button was pressed, or null if not available.</value>
+    /// <value>The timestamp when the button was pressed.</value>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
     [JsonIgnore]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 }
 

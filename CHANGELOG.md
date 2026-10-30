@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0-alpha] - 2026-10-30
+
+Модели приведены к [OpenAPI-схеме MAX Bot API](https://github.com/max-messenger/max-bot-api-client-go/blob/main/schema.yaml): строковые и `object`-поля стали типизированными, а nullability совпадает с документацией — меньше ручного разбора и null-проверок. Спасибо @diquoks за отзыв!
+
+### Breaking Changes
+
+- **Typed enums instead of strings**: `LinkedMessage.Type` — `MessageLinkType?` (было `string`), `MessageRecipient.ChatType` — `ChatType?` (было `string`), `MarkupElement.Type` — новый enum `MarkupType?`. Неизвестное библиотеке значение превращается в `null`, а не роняет разбор апдейта.
+- **Typed inline keyboard**: `InlineKeyboardAttachment.Payload` — `InlineKeyboard` с `InlineKeyboardButton[][] Buttons` (было `Dictionary<string, object>` с `JsonElement` внутри); добавлен шорткат `InlineKeyboardAttachment.Buttons`.
+- **Typed dictionaries**: `Chat.Participants` — `Dictionary<long, long>?` (user id → время последней активности), `Image.Photos` — `Dictionary<string, PhotoSizeToken>?` (было `object`).
+- **Required fields are non-nullable** (по схеме они всегда приходят):
+  - `Message.Recipient` (`new()` по умолчанию), `Message.Timestamp` — `long`; `MessageBody.Mid` — `string`, `MessageBody.Seq` — `long`; `LinkedMessage.Message` — `MessageBody`, `LinkedMessage.Mid`/`Seq` — `string`/`long`; `MessageStat.Views` — `int`.
+  - `User.FirstName` — `string`, `User.LastActivityTime` — `long`; то же для `ChatMember` плюс `LastAccessTime`, `JoinTime` — `long`.
+  - `Chat.LastEventTime` — `long`, `Chat.ParticipantsCount` — `int`; `Image.Url` — `string`; `Subscription.Time` — `long`.
+  - `CallbackQuery.CallbackId` — `string`, `CallbackQuery.User` — `User`, `CallbackQuery.Timestamp` — `long`.
+  - `Update.Timestamp` и `Timestamp` всех типизированных обёрток — `long`. В обёртках обязательные поля тоже не nullable: `ChatId` (`long`), `User`, `IsChannel` (`bool`), `MessageRemovedUpdate.MessageId`/`UserId`, `ChatTitleChangedUpdate.Title`, `DialogMutedUpdate.MutedUntil`, `MessageChatCreatedUpdate.Chat`/`MessageId`.
+  - Вложения: `Url`/`Token` у фото, видео, аудио и файлов — `string`; `DocumentAttachment.FileName` — `string`, `FileSize` — `long`; у стикера `Url`/`Code` — `string`, `Width`/`Height` — `int`. `Video` (`GET /videos/{token}`): `Token` — `string`, `Width`/`Height`/`Duration` — `int`.
+  - Массивы в ответах (`GetMessagesResponse.Messages`, `ChatMembersResponse.Members`, `SubscriptionsResponse.Subscriptions`, `GetUpdatesResponse.Updates`) по умолчанию пустые, а не `null`.
+- **IChatsApi**: `AddChatMembersAsync` возвращает `ModifyMembersResponse` (наследник `Response`); новые члены интерфейса `GetChatMembersByIdsAsync` и `RemoveChatMemberAsync(chatId, userId, block)` — собственные реализации нужно дополнить.
+- **Enum members** больше не помечены `[JsonPropertyName]` — `System.Text.Json` его для enum'ов игнорирует; значение API описано в XML-доке.
+
+### Added
+
+- **Chat button**: `ButtonType.Chat` и поля `InlineKeyboardButton.ChatTitle`, `ChatDescription`, `StartPayload`, `Uuid` (кнопка `chat`, создающая чат).
+- **Data attachment**: `DataAttachment` (`type: "data"`) с payload нажатой кнопки reply-клавиатуры — раньше разбирался как пустой `DocumentAttachment`.
+- **Add members result**: `ModifyMembersResponse.FailedUserIds` и `FailedUserDetails` (`error_code`, `user_ids`) — кого не удалось добавить и почему.
+- **Chat members**: `GetChatMembersByIdsAsync(chatId, userIds)` (`user_ids`) и `RemoveChatMemberAsync(chatId, userId, block)` (`block=true` блокирует участника).
+- **`JsonSnakeCaseEnumConverter<TEnum>`** — snake_case-конвертер, которым помечены все enum'ы библиотеки.
+
+### Fixed
+
+- **Enum deserialization without library options**: `MessageLinkType`, `ChatAction`, `UploadType`, `ChatAdminPermission`, `UpdateType` и другие enum'ы не разбирались обычным `JsonSerializer` — например, `JsonSerializer.SerializeToElement("reply").Deserialize<MessageLinkType>()` падал с `JsonException`. Теперь у каждого enum'а есть `[JsonConverter]`, и модели разбираются одинаково с любыми `JsonSerializerOptions`.
+- **Inline keyboard parsing**: кнопка с `"payload": null` больше не получает строку `"null"`; поля кнопки неожиданного типа и битый `payload` клавиатуры не роняют разбор всего сообщения.
+- **Validation limits**: `InlineKeyboardButton.Text` — до 128 символов, `Payload` — до 1024 (было 64, по схеме MAX).
+- **UpdateTypeHelper.FromString** принимает и PascalCase (`"MessageCreated"`).
+
+### Changed
+
+- **Releases**: GitHub Release создаётся как Latest (не pre-release), даже для `-alpha` версий; при ручном запуске это можно отключить параметром `latest`.
+
 ## [0.7.1-alpha] - 2026-10-27
 
 ### Fixed

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Max.Bot.Types;
@@ -14,10 +15,10 @@ public class Image
     public long? PhotoId { get; set; }
 
     /// <summary>
-    /// Gets or sets the URL of the image.
+    /// Gets or sets the URL of the image. Always sent by MAX API.
     /// </summary>
     [JsonPropertyName("url")]
-    public string? Url { get; set; }
+    public string Url { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the token of the image.
@@ -29,5 +30,5 @@ public class Image
     /// Gets or sets the tokens received after image upload.
     /// </summary>
     [JsonPropertyName("photos")]
-    public object? Photos { get; set; }
+    public Dictionary<string, PhotoSizeToken>? Photos { get; set; }
 }

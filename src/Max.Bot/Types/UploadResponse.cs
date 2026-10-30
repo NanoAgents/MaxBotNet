@@ -12,7 +12,7 @@ public class UploadResponse
     /// </summary>
     /// <value>The upload URL.</value>
     [JsonPropertyName("url")]
-    public string Url { get; set; } = default!;
+    public string Url { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the token for video or audio uploads.

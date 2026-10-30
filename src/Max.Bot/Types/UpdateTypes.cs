@@ -17,7 +17,7 @@ public class MessageEditedUpdate
     /// Gets or sets the timestamp of the update (Unix timestamp in milliseconds).
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the user locale for this update.
@@ -45,7 +45,7 @@ public class MessageRemovedUpdate
     /// Gets or sets the timestamp of the update (Unix timestamp in milliseconds).
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the user locale for this update.
@@ -60,17 +60,17 @@ public class MessageRemovedUpdate
     /// <summary>
     /// Gets or sets the identifier of the removed message (<c>message_id</c>).
     /// </summary>
-    public string? MessageId { get; set; }
+    public string MessageId { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the chat identifier where the message was removed.
     /// </summary>
-    public long? ChatId { get; set; }
+    public long ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets the identifier of the user who removed the message.
     /// </summary>
-    public long? UserId { get; set; }
+    public long UserId { get; set; }
 }
 
 /// <summary>
@@ -89,7 +89,7 @@ public class BotAddedUpdate
     /// Gets or sets the timestamp of the update (Unix timestamp in milliseconds).
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the chat where the bot was added.
@@ -99,7 +99,7 @@ public class BotAddedUpdate
     /// <summary>
     /// Gets or sets the user (bot) that was added.
     /// </summary>
-    public User? User { get; set; }
+    public User User { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the ID of the user who invited the bot.
@@ -109,12 +109,12 @@ public class BotAddedUpdate
     /// <summary>
     /// Gets or sets the identifier of the chat the bot was added to.
     /// </summary>
-    public long? ChatId { get; set; }
+    public long ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the bot was added to a channel.
     /// </summary>
-    public bool? IsChannel { get; set; }
+    public bool IsChannel { get; set; }
 }
 
 /// <summary>
@@ -133,7 +133,7 @@ public class BotRemovedUpdate
     /// Gets or sets the timestamp of the update (Unix timestamp in milliseconds).
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the chat where the bot was removed.
@@ -143,17 +143,17 @@ public class BotRemovedUpdate
     /// <summary>
     /// Gets or sets the user (bot) that was removed.
     /// </summary>
-    public User? User { get; set; }
+    public User User { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the identifier of the chat the bot was removed from.
     /// </summary>
-    public long? ChatId { get; set; }
+    public long ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the bot was removed from a channel.
     /// </summary>
-    public bool? IsChannel { get; set; }
+    public bool IsChannel { get; set; }
 }
 
 /// <summary>
@@ -172,17 +172,17 @@ public class BotStartedUpdate
     /// Gets or sets the timestamp of the update (Unix timestamp in milliseconds).
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the chat ID where the bot was started.
     /// </summary>
-    public long? ChatId { get; set; }
+    public long ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets the user who started the bot.
     /// </summary>
-    public User? User { get; set; }
+    public User User { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the user locale.
@@ -211,17 +211,17 @@ public class BotStoppedUpdate
     /// Gets or sets the timestamp of the update (Unix timestamp in milliseconds).
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the chat ID where the bot was stopped.
     /// </summary>
-    public long? ChatId { get; set; }
+    public long ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets the user who stopped the bot.
     /// </summary>
-    public User? User { get; set; }
+    public User User { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the user locale.
@@ -245,7 +245,7 @@ public class UserAddedUpdate
     /// Gets or sets the timestamp of the update (Unix timestamp in milliseconds).
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the chat where the user was added.
@@ -255,7 +255,7 @@ public class UserAddedUpdate
     /// <summary>
     /// Gets or sets the user that was added.
     /// </summary>
-    public User? User { get; set; }
+    public User User { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the ID of the user who invited the user.
@@ -265,12 +265,12 @@ public class UserAddedUpdate
     /// <summary>
     /// Gets or sets the identifier of the chat the user was added to.
     /// </summary>
-    public long? ChatId { get; set; }
+    public long ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the user was added to a channel.
     /// </summary>
-    public bool? IsChannel { get; set; }
+    public bool IsChannel { get; set; }
 }
 
 /// <summary>
@@ -289,7 +289,7 @@ public class UserRemovedUpdate
     /// Gets or sets the timestamp of the update (Unix timestamp in milliseconds).
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the chat where the user was removed.
@@ -299,12 +299,12 @@ public class UserRemovedUpdate
     /// <summary>
     /// Gets or sets the user that was removed.
     /// </summary>
-    public User? User { get; set; }
+    public User User { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the identifier of the chat the user was removed from.
     /// </summary>
-    public long? ChatId { get; set; }
+    public long ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets the identifier of the administrator who removed the user.
@@ -314,7 +314,7 @@ public class UserRemovedUpdate
     /// <summary>
     /// Gets or sets a value indicating whether the user was removed from a channel.
     /// </summary>
-    public bool? IsChannel { get; set; }
+    public bool IsChannel { get; set; }
 }
 
 /// <summary>
@@ -333,7 +333,7 @@ public class ChatTitleChangedUpdate
     /// Gets or sets the timestamp of the update (Unix timestamp in milliseconds).
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the chat with the new title.
@@ -343,17 +343,17 @@ public class ChatTitleChangedUpdate
     /// <summary>
     /// Gets or sets the user who changed the title.
     /// </summary>
-    public User? User { get; set; }
+    public User User { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the identifier of the chat whose title changed.
     /// </summary>
-    public long? ChatId { get; set; }
+    public long ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets the new chat title.
     /// </summary>
-    public string? Title { get; set; }
+    public string Title { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -372,12 +372,12 @@ public class DialogMutedUpdate
     /// Gets or sets the timestamp of the update (Unix timestamp in milliseconds).
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the chat ID of the muted dialog.
     /// </summary>
-    public long? ChatId { get; set; }
+    public long ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets whether the dialog is muted.
@@ -387,12 +387,12 @@ public class DialogMutedUpdate
     /// <summary>
     /// Gets or sets the time (Unix milliseconds) until which the dialog is muted.
     /// </summary>
-    public long? MutedUntil { get; set; }
+    public long MutedUntil { get; set; }
 
     /// <summary>
     /// Gets or sets the user who muted the dialog.
     /// </summary>
-    public User? User { get; set; }
+    public User User { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the user locale.
@@ -416,12 +416,12 @@ public class DialogUnmutedUpdate
     /// Gets or sets the timestamp of the update (Unix timestamp in milliseconds).
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the chat ID of the unmuted dialog.
     /// </summary>
-    public long? ChatId { get; set; }
+    public long ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets whether the dialog is muted.
@@ -431,7 +431,7 @@ public class DialogUnmutedUpdate
     /// <summary>
     /// Gets or sets the user who unmuted the dialog.
     /// </summary>
-    public User? User { get; set; }
+    public User User { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the user locale.
@@ -455,17 +455,17 @@ public class DialogClearedUpdate
     /// Gets or sets the timestamp of the update (Unix timestamp in milliseconds).
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the chat ID of the cleared dialog.
     /// </summary>
-    public long? ChatId { get; set; }
+    public long ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets the user who cleared the dialog.
     /// </summary>
-    public User? User { get; set; }
+    public User User { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the user locale.
@@ -489,17 +489,17 @@ public class DialogRemovedUpdate
     /// Gets or sets the timestamp of the update (Unix timestamp in milliseconds).
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the chat ID of the removed dialog.
     /// </summary>
-    public long? ChatId { get; set; }
+    public long ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets the user who removed the dialog.
     /// </summary>
-    public User? User { get; set; }
+    public User User { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the user locale.
@@ -523,7 +523,7 @@ public class MessageChatCreatedUpdate
     /// Gets or sets the timestamp of the update (Unix timestamp in milliseconds).
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the user locale.
@@ -538,17 +538,17 @@ public class MessageChatCreatedUpdate
     /// <summary>
     /// Gets or sets the created chat.
     /// </summary>
-    public Chat? Chat { get; set; }
+    public Chat Chat { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the identifier of the created chat.
     /// </summary>
-    public long? ChatId { get; set; }
+    public long ChatId { get; set; }
 
     /// <summary>
     /// Gets or sets the identifier of the message where the button was clicked.
     /// </summary>
-    public string? MessageId { get; set; }
+    public string MessageId { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the payload from the chat button (<c>start_payload</c>).

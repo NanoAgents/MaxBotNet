@@ -15,7 +15,7 @@ public class Subscription
     /// </summary>
     /// <value>The webhook URL.</value>
     [JsonPropertyName("url")]
-    public string Url { get; set; } = default!;
+    public string Url { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the list of update types that this subscription receives.
@@ -51,7 +51,7 @@ public class Subscription
     /// Gets or sets the Unix time (milliseconds) when the subscription was created, as returned by MAX API.
     /// </summary>
     [JsonPropertyName("time")]
-    public long? Time { get; set; }
+    public long Time { get; set; }
 
     /// <summary>
     /// Gets or sets the API version of the subscription.

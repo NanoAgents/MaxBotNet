@@ -1,11 +1,12 @@
 using System.Text.Json.Serialization;
+using Max.Bot.Types.Converters;
 
 namespace Max.Bot.Types.Enums;
 
 /// <summary>
 /// Represents the status of a chat.
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonSnakeCaseEnumConverter<ChatStatus>))]
 public enum ChatStatus
 {
     /// <summary>
@@ -33,4 +34,3 @@ public enum ChatStatus
     /// </summary>
     Suspended
 }
-

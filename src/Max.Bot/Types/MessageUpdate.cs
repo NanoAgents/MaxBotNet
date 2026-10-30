@@ -19,7 +19,7 @@ public class MessageUpdate
     /// </summary>
     /// <value>The timestamp when the update was created.</value>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
-    public long? Timestamp { get; set; }
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the user locale for this update.

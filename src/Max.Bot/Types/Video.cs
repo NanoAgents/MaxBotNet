@@ -13,7 +13,7 @@ public class Video
     /// Gets or sets the media token returned by /videos/{token}.
     /// </summary>
     [JsonPropertyName("token")]
-    public string? Token { get; set; }
+    public string Token { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the unique identifier of the video.
@@ -35,26 +35,26 @@ public class Video
     /// <summary>
     /// Gets or sets the width of the video in pixels.
     /// </summary>
-    /// <value>The width of the video in pixels, or null if not available.</value>
-    [Range(1, int.MaxValue, ErrorMessage = "Width must be greater than zero if provided.")]
+    /// <value>The width of the video in pixels.</value>
+    [Range(0, int.MaxValue, ErrorMessage = "Width cannot be negative.")]
     [JsonPropertyName("width")]
-    public int? Width { get; set; }
+    public int Width { get; set; }
 
     /// <summary>
     /// Gets or sets the height of the video in pixels.
     /// </summary>
-    /// <value>The height of the video in pixels, or null if not available.</value>
-    [Range(1, int.MaxValue, ErrorMessage = "Height must be greater than zero if provided.")]
+    /// <value>The height of the video in pixels.</value>
+    [Range(0, int.MaxValue, ErrorMessage = "Height cannot be negative.")]
     [JsonPropertyName("height")]
-    public int? Height { get; set; }
+    public int Height { get; set; }
 
     /// <summary>
     /// Gets or sets the duration of the video in seconds.
     /// </summary>
-    /// <value>The duration of the video in seconds, or null if not available.</value>
-    [Range(1, int.MaxValue, ErrorMessage = "Duration must be greater than zero if provided.")]
+    /// <value>The duration of the video in seconds.</value>
+    [Range(0, int.MaxValue, ErrorMessage = "Duration cannot be negative.")]
     [JsonPropertyName("duration")]
-    public int? Duration { get; set; }
+    public int Duration { get; set; }
 
     /// <summary>
     /// Gets or sets the size of the video file in bytes.
@@ -103,7 +103,7 @@ public class VideoThumbnail
     /// Gets or sets the thumbnail URL.
     /// </summary>
     [JsonPropertyName("url")]
-    public string? Url { get; set; }
+    public string Url { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the thumbnail photo identifier.

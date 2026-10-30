@@ -59,14 +59,14 @@ public class PhotoAttachment : Attachment
     /// Gets or sets the URL of the photo.
     /// </summary>
     [JsonPropertyName("url")]
-    public string? Url { get; set; }
+    public string Url { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the attachment token. Use it to send the same media again
     /// (for example with <see cref="Requests.AttachmentRequest.Image(string)"/>).
     /// </summary>
     [JsonPropertyName("token")]
-    public string? Token { get; set; }
+    public string Token { get; set; } = string.Empty;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PhotoAttachment"/> class.
@@ -127,14 +127,14 @@ public class VideoAttachment : Attachment
     /// Gets or sets the URL of the video.
     /// </summary>
     [JsonPropertyName("url")]
-    public string? Url { get; set; }
+    public string Url { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the attachment token. Use it to send the same media again
     /// (for example with <see cref="Requests.AttachmentRequest.Video(string)"/>).
     /// </summary>
     [JsonPropertyName("token")]
-    public string? Token { get; set; }
+    public string Token { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the video thumbnail.
@@ -189,14 +189,14 @@ public class AudioAttachment : Attachment
     /// Gets or sets the URL of the audio file.
     /// </summary>
     [JsonPropertyName("url")]
-    public string? Url { get; set; }
+    public string Url { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the attachment token. Use it to send the same media again
     /// (for example with <see cref="Requests.AttachmentRequest.Audio(string)"/>).
     /// </summary>
     [JsonPropertyName("token")]
-    public string? Token { get; set; }
+    public string Token { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the audio transcription, if MAX provides it.
@@ -233,13 +233,13 @@ public class DocumentAttachment : Attachment
     /// Gets or sets the name of the document file (<c>filename</c> in MAX API).
     /// </summary>
     [JsonPropertyName("file_name")]
-    public string? FileName { get; set; }
+    public string FileName { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the size of the document file in bytes.
     /// </summary>
     [JsonPropertyName("file_size")]
-    public long? FileSize { get; set; }
+    public long FileSize { get; set; }
 
     /// <summary>
     /// Gets or sets the MIME type of the document.
@@ -251,14 +251,14 @@ public class DocumentAttachment : Attachment
     /// Gets or sets the URL of the document.
     /// </summary>
     [JsonPropertyName("url")]
-    public string? Url { get; set; }
+    public string Url { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the attachment token. Use it to send the same media again
     /// (for example with <see cref="Requests.AttachmentRequest.File(string)"/>).
     /// </summary>
     [JsonPropertyName("token")]
-    public string? Token { get; set; }
+    public string Token { get; set; } = string.Empty;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DocumentAttachment"/> class.
@@ -346,10 +346,16 @@ public class InlineKeyboardAttachment : Attachment
     public string? CallbackId { get; set; }
 
     /// <summary>
-    /// Gets or sets the payload containing the keyboard buttons.
+    /// Gets or sets the keyboard sent with the message (<c>payload.buttons</c>).
     /// </summary>
     [JsonPropertyName("payload")]
-    public Dictionary<string, object>? Payload { get; set; }
+    public InlineKeyboard Payload { get; set; } = new();
+
+    /// <summary>
+    /// Gets the keyboard buttons (<c>payload.buttons</c>). Shortcut for <see cref="Payload"/>.<see cref="InlineKeyboard.Buttons"/>.
+    /// </summary>
+    [JsonIgnore]
+    public InlineKeyboardButton[][] Buttons => Payload?.Buttons ?? Array.Empty<InlineKeyboardButton[]>();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="InlineKeyboardAttachment"/> class.
@@ -366,25 +372,25 @@ public class StickerAttachment : Attachment
     /// Gets or sets the sticker image URL.
     /// </summary>
     [JsonPropertyName("url")]
-    public string? Url { get; set; }
+    public string Url { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the sticker code. Use it with <see cref="Requests.AttachmentRequest.Sticker(string)"/> to send the same sticker.
     /// </summary>
     [JsonPropertyName("code")]
-    public string? Code { get; set; }
+    public string Code { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the sticker width in pixels.
     /// </summary>
     [JsonPropertyName("width")]
-    public int? Width { get; set; }
+    public int Width { get; set; }
 
     /// <summary>
     /// Gets or sets the sticker height in pixels.
     /// </summary>
     [JsonPropertyName("height")]
-    public int? Height { get; set; }
+    public int Height { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="StickerAttachment"/> class.
@@ -433,6 +439,23 @@ public class ShareAttachment : Attachment
     public ShareAttachment() => Type = AttachmentTypeNames.Share;
 }
 
+/// <summary>
+/// Represents a data attachment (<c>data</c>) that MAX adds to a message sent by a <c>message</c> button of a reply keyboard.
+/// </summary>
+public class DataAttachment : Attachment
+{
+    /// <summary>
+    /// Gets or sets the payload of the pressed button.
+    /// </summary>
+    [JsonPropertyName("data")]
+    public string Data { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DataAttachment"/> class.
+    /// </summary>
+    public DataAttachment() => Type = AttachmentTypeNames.Data;
+}
+
 internal static class AttachmentTypeNames
 {
     public const string Image = "image";
@@ -444,4 +467,5 @@ internal static class AttachmentTypeNames
     public const string Contact = "contact";
     public const string Sticker = "sticker";
     public const string Share = "share";
+    public const string Data = "data";
 }

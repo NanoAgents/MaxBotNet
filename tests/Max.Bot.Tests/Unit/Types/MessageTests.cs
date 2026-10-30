@@ -6,6 +6,7 @@
 using FluentAssertions;
 using Max.Bot.Networking;
 using Max.Bot.Types;
+using Max.Bot.Types.Enums;
 using Xunit;
 
 namespace Max.Bot.Tests.Unit.Types;
@@ -25,7 +26,7 @@ public class MessageTests
         result.Should().NotBeNull();
         result!.Recipient.Should().NotBeNull();
         result.Recipient!.ChatId.Should().Be(456);
-        result.Recipient.ChatType.Should().Be("dialog");
+        result.Recipient.ChatType.Should().Be(ChatType.Dialog);
         result.Sender.Should().NotBeNull();
         result.Sender!.Id.Should().Be(789);
         result.Sender.Username.Should().Be("testuser");
@@ -46,9 +47,10 @@ public class MessageTests
 
         // Assert
         result.Should().NotBeNull();
-        result!.Recipient.Should().BeNull();
+        result!.Recipient.Should().NotBeNull();
+        result.Recipient.ChatType.Should().BeNull();
         result.Text.Should().BeNull();
-        result.Timestamp.Should().BeNull();
+        result.Timestamp.Should().Be(0);
     }
 
     [Fact]
@@ -58,7 +60,7 @@ public class MessageTests
         var message = new Message
         {
             Sender = new User { Id = 789, Username = "testuser" },
-            Recipient = new MessageRecipient { ChatId = 456, ChatType = "dialog" },
+            Recipient = new MessageRecipient { ChatId = 456, ChatType = ChatType.Dialog },
             Body = new MessageBody { Mid = "mid.123", Text = "Hello" },
             Timestamp = 1609459200000
         };
@@ -91,7 +93,7 @@ public class MessageTests
         json.Should().NotBeNullOrEmpty();
         json.Should().Contain("\"timestamp\":1609459200000");
         json.Should().NotContain("\"sender\"");
-        json.Should().NotContain("\"recipient\"");
+        json.Should().Contain("\"recipient\":{}");
         json.Should().NotContain("\"text\"");
     }
 
@@ -128,7 +130,7 @@ public class MessageTests
         // Assert
         result.Should().NotBeNull();
         result!.Link.Should().NotBeNull();
-        result.Link!.Type.Should().Be("reply");
+        result.Link!.Type.Should().Be(MessageLinkType.Reply);
         result.Link.ChatId.Should().Be(456);
         result.Link.Sender.Should().NotBeNull();
         result.Link.Sender!.Id.Should().Be(789);
@@ -144,7 +146,7 @@ public class MessageTests
         var message = new Message
         {
             Sender = new User { Id = 789, Username = "testuser" },
-            Recipient = new MessageRecipient { ChatId = 456, ChatType = "dialog" },
+            Recipient = new MessageRecipient { ChatId = 456, ChatType = ChatType.Dialog },
             Timestamp = 1609459200000,
             Body = new MessageBody { Mid = "mid.123", Text = "Hello", Attachments = Array.Empty<Attachment>() },
             Stat = new MessageStat { ReadCount = 5 },
