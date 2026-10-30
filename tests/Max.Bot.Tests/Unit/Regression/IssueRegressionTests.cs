@@ -364,7 +364,7 @@ public class IssueRegressionTests
         var api = new MessagesApi(_http.Object, _options);
         var video = await api.GetVideoAsync("video-token");
 
-        video.Urls.Should().ContainKey("mp4_480").WhoseValue.Should().Be("https://v/480");
+        video.Urls!.Mp4P480.Should().Be("https://v/480");
         video.Thumbnail!.Url.Should().Be("https://thumb");
         video.Duration.Should().Be(12);
     }

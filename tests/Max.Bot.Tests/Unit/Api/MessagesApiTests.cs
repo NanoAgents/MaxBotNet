@@ -538,7 +538,7 @@ public class MessagesApiTests
         result.Height.Should().Be(1280);
         result.Duration.Should().Be(6633);
         result.Urls.Should().NotBeNull();
-        result.Urls!["mp4_720"].Should().Be("http://vd555.okcdn.ru/video.mp4");
+        result.Urls!.Mp4P720.Should().Be("http://vd555.okcdn.ru/video.mp4");
         result.Thumbnail.Should().NotBeNull();
         result.Thumbnail!.Url.Should().Be("https://pimg.mycdn.me/thumb.jpg");
     }

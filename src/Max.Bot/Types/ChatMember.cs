@@ -38,6 +38,7 @@ public class ChatMember
     /// Gets or sets the user's first name.
     /// </summary>
     [JsonPropertyName("first_name")]
+    [JsonConverter(typeof(Converters.NullAsEmptyStringConverter))]
     public string FirstName { get; set; } = string.Empty;
 
     /// <summary>
@@ -56,6 +57,7 @@ public class ChatMember
     /// Gets or sets the user's last activity time (Unix timestamp in milliseconds).
     /// </summary>
     [JsonPropertyName("last_activity_time")]
+    [JsonConverter(typeof(Converters.NullAsDefaultConverter<long>))]
     public long LastActivityTime { get; set; }
 
     /// <summary>
@@ -68,6 +70,7 @@ public class ChatMember
     /// Gets or sets the user's last access time in this chat.
     /// </summary>
     [JsonPropertyName("last_access_time")]
+    [JsonConverter(typeof(Converters.NullAsDefaultConverter<long>))]
     public long LastAccessTime { get; set; }
 
     /// <summary>
@@ -86,6 +89,7 @@ public class ChatMember
     /// Gets or sets the time when the user joined the chat (Unix timestamp in seconds).
     /// </summary>
     [JsonPropertyName("join_time")]
+    [JsonConverter(typeof(Converters.NullAsDefaultConverter<long>))]
     public long JoinTime { get; set; }
 
     /// <summary>

@@ -456,16 +456,71 @@ public class DataAttachment : Attachment
     public DataAttachment() => Type = AttachmentTypeNames.Data;
 }
 
-internal static class AttachmentTypeNames
+/// <summary>
+/// Represents a custom reply keyboard (<c>reply_keyboard</c>) attached to a message.
+/// </summary>
+public class ReplyKeyboardAttachment : Attachment
 {
+    /// <summary>
+    /// Gets or sets the keyboard buttons (rows of buttons).
+    /// </summary>
+    [JsonPropertyName("buttons")]
+    public ReplyKeyboardButton[][] Buttons { get; set; } = Array.Empty<ReplyKeyboardButton[]>();
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ReplyKeyboardAttachment"/> class.
+    /// </summary>
+    public ReplyKeyboardAttachment() => Type = AttachmentTypeNames.ReplyKeyboard;
+}
+
+/// <summary>
+/// Represents an attachment of a type unknown to this library version.
+/// The original JSON is kept in <see cref="RawJson"/>.
+/// </summary>
+public class UnknownAttachment : Attachment
+{
+    /// <summary>
+    /// Gets or sets the original JSON of the attachment.
+    /// </summary>
+    [JsonIgnore]
+    public string RawJson { get; set; } = "{}";
+}
+
+/// <summary>
+/// Attachment type names used by MAX Bot API in <see cref="Attachment.Type"/>.
+/// </summary>
+public static class AttachmentTypeNames
+{
+    /// <summary>Image (<see cref="PhotoAttachment"/>).</summary>
     public const string Image = "image";
+
+    /// <summary>Video (<see cref="VideoAttachment"/>).</summary>
     public const string Video = "video";
+
+    /// <summary>Audio (<see cref="AudioAttachment"/>).</summary>
     public const string Audio = "audio";
+
+    /// <summary>File (<see cref="DocumentAttachment"/>).</summary>
     public const string File = "file";
+
+    /// <summary>Inline keyboard (<see cref="InlineKeyboardAttachment"/>).</summary>
     public const string InlineKeyboard = "inline_keyboard";
+
+    /// <summary>Reply keyboard (<see cref="ReplyKeyboardAttachment"/>).</summary>
+    public const string ReplyKeyboard = "reply_keyboard";
+
+    /// <summary>Location (<see cref="LocationAttachment"/>).</summary>
     public const string Location = "location";
+
+    /// <summary>Contact (<see cref="ContactAttachment"/>).</summary>
     public const string Contact = "contact";
+
+    /// <summary>Sticker (<see cref="StickerAttachment"/>).</summary>
     public const string Sticker = "sticker";
+
+    /// <summary>Link preview (<see cref="ShareAttachment"/>).</summary>
     public const string Share = "share";
+
+    /// <summary>Reply keyboard button payload (<see cref="DataAttachment"/>).</summary>
     public const string Data = "data";
 }

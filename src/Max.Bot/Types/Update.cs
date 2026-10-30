@@ -14,7 +14,8 @@ namespace Max.Bot.Types;
 public class Update
 {
     /// <summary>
-    /// Gets or sets the unique identifier of the update.
+    /// Gets or sets the identifier of the update. MAX Bot API does not send <c>update_id</c>, so it is <c>0</c> for API updates;
+    /// use <see cref="GetUpdatesResponse.Marker"/> for long polling.
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Update ID cannot be negative.")]
     [JsonPropertyName("update_id")]
@@ -54,7 +55,7 @@ public class Update
 
     /// <summary>
     /// Gets or sets the message in this update.
-    /// Present in: message_created, message_edited, message_removed, message_chat_created.
+    /// Present in: message_created, message_edited and message_callback (can be <c>null</c> if the message was deleted).
     /// </summary>
     [JsonPropertyName("message")]
     public Message? Message { get; set; }
@@ -177,7 +178,7 @@ public class Update
 
     /// <summary>
     /// Gets or sets the new chat title.
-    /// Present in: chat_title_changed, message_chat_created.
+    /// Present in: chat_title_changed. For message_chat_created use <c>Chat.Title</c>.
     /// </summary>
     [JsonIgnore]
     public string? Title { get; set; }
@@ -197,17 +198,19 @@ public class Update
     public long? MutedUntil { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether <see cref="Chat"/> was built from <c>message.recipient</c>
-    /// rather than received from MAX API.
+    /// Gets a value indicating whether <see cref="Chat"/> is a partial chat built from <c>message.recipient</c>
+    /// rather than received from MAX API. A partial chat has only <see cref="Types.Chat.ChatId"/> and <see cref="Types.Chat.Type"/>;
+    /// other fields keep their defaults — request the full chat with <c>GetChatAsync</c> if needed.
     /// </summary>
     [JsonIgnore]
-    internal bool IsChatInferred { get; private set; }
+    public bool IsChatInferred { get; private set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether <see cref="ChatId"/> was taken from <c>message.recipient</c>.
+    /// Gets a value indicating whether <see cref="ChatId"/> was taken from <c>message.recipient</c> or the <c>chat</c> object
+    /// rather than from the root <c>chat_id</c> field.
     /// </summary>
     [JsonIgnore]
-    internal bool IsChatIdInferred { get; private set; }
+    public bool IsChatIdInferred { get; private set; }
 
     /// <summary>
     /// Fills <see cref="ChatId"/> and <see cref="Chat"/> from values inferred from <c>message.recipient</c>
@@ -350,7 +353,7 @@ public class Update
                 Chat = Chat,
                 ChatId = ChatId ?? Chat?.ChatId ?? 0,
                 User = User ?? new User(),
-                InviterId = InviterId,
+                InviterId = InviterId ?? User?.Id,
                 IsChannel = IsChannel ?? false
             };
         }
@@ -511,7 +514,7 @@ public class Update
                 UpdateId = UpdateId,
                 Timestamp = Timestamp,
                 ChatId = ChatId ?? 0,
-                IsMuted = IsMuted,
+                IsMuted = IsMuted ?? true,
                 MutedUntil = MutedUntil ?? 0,
                 User = User ?? new User(),
                 UserLocale = UserLocale
@@ -535,7 +538,7 @@ public class Update
                 UpdateId = UpdateId,
                 Timestamp = Timestamp,
                 ChatId = ChatId ?? 0,
-                IsMuted = IsMuted,
+                IsMuted = IsMuted ?? false,
                 User = User ?? new User(),
                 UserLocale = UserLocale
             };

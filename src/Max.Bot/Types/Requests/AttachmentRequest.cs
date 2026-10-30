@@ -46,6 +46,25 @@ public class AttachmentRequest
     public double? Longitude { get; set; }
 
     /// <summary>
+    /// Gets or sets the buttons of a <c>reply_keyboard</c> attachment (rows of buttons). Use <see cref="ReplyKeyboard"/> to create it.
+    /// </summary>
+    [JsonPropertyName("buttons")]
+    public ReplyKeyboardButton[][]? Buttons { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether a <c>reply_keyboard</c> is shown in a group chat only to the user
+    /// who mentioned the bot or replied to it.
+    /// </summary>
+    [JsonPropertyName("direct")]
+    public bool? Direct { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier of the only chat participant who sees a <c>reply_keyboard</c>.
+    /// </summary>
+    [JsonPropertyName("direct_user_id")]
+    public long? DirectUserId { get; set; }
+
+    /// <summary>
     /// Creates an image attachment from any public image URL. MAX downloads the image itself.
     /// </summary>
     /// <param name="url">The absolute URL of the image.</param>
@@ -267,6 +286,32 @@ public class AttachmentRequest
         {
             Type = AttachmentTypeNames.InlineKeyboard,
             Payload = new InlineKeyboard(normalizedRows)
+        };
+    }
+
+    /// <summary>
+    /// Creates a reply keyboard attachment (<c>reply_keyboard</c>): buttons shown instead of the user's keyboard.
+    /// </summary>
+    /// <param name="buttons">The rows of buttons.</param>
+    /// <param name="direct"><c>true</c> to show the keyboard in a group chat only to the user who mentioned the bot or replied to it.</param>
+    /// <param name="directUserId">The identifier of the only chat participant who sees the keyboard.</param>
+    /// <returns>The attachment request.</returns>
+    public static AttachmentRequest ReplyKeyboard(ReplyKeyboardButton[][] buttons, bool? direct = null, long? directUserId = null)
+    {
+        ArgumentNullException.ThrowIfNull(buttons);
+
+        var rows = buttons.Select(row => row ?? Array.Empty<ReplyKeyboardButton>()).Where(row => row.Length > 0).ToArray();
+        if (rows.Length == 0)
+        {
+            throw new ArgumentException("Reply keyboard must contain at least one button.", nameof(buttons));
+        }
+
+        return new AttachmentRequest
+        {
+            Type = AttachmentTypeNames.ReplyKeyboard,
+            Buttons = rows,
+            Direct = direct,
+            DirectUserId = directUserId
         };
     }
 

@@ -29,6 +29,7 @@ public class Message
     /// Can be a user or a chat. Always present in MAX API responses.
     /// </summary>
     [JsonPropertyName("recipient")]
+    [JsonConverter(typeof(Converters.NullAsNewConverter<MessageRecipient>))]
     public MessageRecipient Recipient { get; set; } = new();
 
     /// <summary>
@@ -37,6 +38,7 @@ public class Message
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
     [JsonPropertyName("timestamp")]
+    [JsonConverter(typeof(Converters.NullAsDefaultConverter<long>))]
     public long Timestamp { get; set; }
 
     /// <summary>
@@ -126,6 +128,7 @@ public class LinkedMessage
     /// Note: In API this is called "message" but contains only MessageBody fields, not full Message.
     /// </summary>
     [JsonPropertyName("message")]
+    [JsonConverter(typeof(Converters.NullAsNewConverter<MessageBody>))]
     public MessageBody Message { get; set; } = new();
 
     /// <summary>
@@ -157,6 +160,7 @@ public class MessageBody
     /// Gets or sets the message ID.
     /// </summary>
     [JsonPropertyName("mid")]
+    [JsonConverter(typeof(Converters.NullAsEmptyStringConverter))]
     public string Mid { get; set; } = string.Empty;
 
     /// <summary>
@@ -165,6 +169,7 @@ public class MessageBody
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Sequence number cannot be negative.")]
     [JsonPropertyName("seq")]
+    [JsonConverter(typeof(Converters.NullAsDefaultConverter<long>))]
     public long Seq { get; set; }
 
     /// <summary>
@@ -204,6 +209,7 @@ public class MessageStat
     /// </summary>
     [Range(0, int.MaxValue, ErrorMessage = "Views cannot be negative.")]
     [JsonPropertyName("views")]
+    [JsonConverter(typeof(Converters.NullAsDefaultConverter<int>))]
     public int Views { get; set; }
 }
 

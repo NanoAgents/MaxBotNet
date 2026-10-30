@@ -18,6 +18,7 @@ public class Image
     /// Gets or sets the URL of the image. Always sent by MAX API.
     /// </summary>
     [JsonPropertyName("url")]
+    [JsonConverter(typeof(Converters.NullAsEmptyStringConverter))]
     public string Url { get; set; } = string.Empty;
 
     /// <summary>

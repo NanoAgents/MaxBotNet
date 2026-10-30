@@ -225,14 +225,16 @@ public class AttachmentFormatTests
     // ==================== UNKNOWN TYPE ====================
 
     [Fact]
-    public void UnknownType_ShouldDeserialize_AsDocumentAttachment()
+    public void UnknownType_ShouldDeserialize_AsUnknownAttachmentWithRawJson()
     {
         var json = """{"type":"future_media","id":999,"file_id":"media1"}""";
 
         var attachment = MaxJsonSerializer.Deserialize<Attachment>(json);
 
-        attachment.Should().BeOfType<DocumentAttachment>();
+        attachment.Should().BeOfType<UnknownAttachment>();
         attachment.Type.Should().Be("future_media");
+        ((UnknownAttachment)attachment).RawJson.Should().Be(json);
+        MaxJsonSerializer.Serialize(attachment).Should().Be(json);
     }
 
     // ==================== FULL MESSAGE ====================

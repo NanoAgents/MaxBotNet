@@ -41,7 +41,7 @@ public class CallbackQuery
     /// This property maps to "payload" field from API.
     /// </summary>
     /// <value>The callback payload, or null if not available.</value>
-    [StringLength(64, ErrorMessage = "Payload must not exceed 64 characters.")]
+    [StringLength(1024, ErrorMessage = "Payload must not exceed 1024 characters.")]
     [JsonIgnore]
     public string? Payload { get; set; }
 

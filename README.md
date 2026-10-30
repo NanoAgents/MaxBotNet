@@ -70,7 +70,8 @@ var upload = await client.Files.UploadAsync(UploadType.File, stream, "report.pdf
 await client.Messages.SendMessageWithAttachmentAsync(AttachmentRequest.FromUpload(UploadType.File, upload), chatId: chatId);
 ```
 
-Также доступны `AttachmentRequest.Image(token)`, `Video`, `Audio`, `File`, `Sticker`, `Contact`, `Location`, `Share` и `Keyboard`.
+Также доступны `AttachmentRequest.Image(token)`, `Video`, `Audio`, `File`, `Sticker`, `Contact`, `Location`, `Share`, `Keyboard` и `ReplyKeyboard`
+(кнопки `ReplyKeyboardButton.Message`, `GeoLocation`, `Contact` вместо клавиатуры пользователя; payload нажатой кнопки приходит как `DataAttachment`).
 Если MAX ещё обрабатывает только что загруженный файл, API отвечает `attachment.not.ready`: `SendMessageAsync(SendMessageRequest)`,
 `SendMessageWithAttachment(s)Async` и `EditMessageAsync` с вложениями повторяют запрос автоматически, а при исчерпании попыток выбрасывается `MaxAttachmentNotReadyException`.
 
@@ -87,7 +88,8 @@ await client.Messages.AnswerCallbackQueryAsync(
 
 Модели повторяют [OpenAPI-схему MAX Bot API](https://github.com/max-messenger/max-bot-api-client-go/blob/main/schema.yaml):
 обязательные поля не nullable (`Message.Recipient`, `Message.Timestamp`, `MessageBody.Mid`, `CallbackQuery.CallbackId`, `User.FirstName`, …),
-а строковые значения API разобраны в enum'ы.
+а строковые значения API разобраны в enum'ы. Nullable остаются только поля, которые MAX действительно может не прислать:
+`Message.Body` (сообщение только с пересылкой), `Message.Sender` (пост от имени канала), необязательные поля схемы.
 
 ```csharp
 var message = update.Message!;
@@ -105,8 +107,9 @@ foreach (var keyboard in message.Body?.Attachments?.OfType<InlineKeyboardAttachm
 }
 ```
 
-Все enum'ы помечены конвертером snake_case, поэтому модели и enum'ы разбираются и обычным `JsonSerializer` без
-`MaxJsonSerializer.Options`: `JsonSerializer.Deserialize<MessageLinkType>("\"reply\"")` вернёт `MessageLinkType.Reply`.
+Все enum'ы помечены конвертером snake_case, поэтому модели и enum'ы разбираются и обычным `JsonSerializer` с опциями
+по умолчанию: `JsonSerializer.Deserialize<MessageLinkType>("\"reply\"")` вернёт `MessageLinkType.Reply`. Свой
+`JsonStringEnumConverter` в `JsonSerializerOptions` имеет приоритет над атрибутом типа — для данных MAX берите `MaxJsonSerializer.Options`.
 Если MAX пришлёт значение, неизвестное текущей версии библиотеки, nullable-поля вроде `LinkedMessage.Type` и
 `MessageRecipient.ChatType` станут `null`, а не уронят разбор всего апдейта.
 

@@ -87,8 +87,17 @@ public class AttachmentJsonConverter : JsonConverter<Attachment>
             return DeserializeMerged<DataAttachment>(root, typeString, null, options);
         }
 
-        // Fallback for unknown types — use DocumentAttachment as it has the most generic fields (url, token)
-        return DeserializeMerged<DocumentAttachment>(root, typeString, null, options);
+        if (IsType(typeString, AttachmentTypeNames.ReplyKeyboard))
+        {
+            return DeserializeMerged<ReplyKeyboardAttachment>(root, typeString, null, options);
+        }
+
+        // Types unknown to this library version keep their raw JSON.
+        return new UnknownAttachment
+        {
+            Type = typeString ?? string.Empty,
+            RawJson = root.GetRawText()
+        };
     }
 
     /// <inheritdoc />
@@ -125,6 +134,16 @@ public class AttachmentJsonConverter : JsonConverter<Attachment>
                 break;
             case DataAttachment dataAttachment:
                 JsonSerializer.Serialize(writer, dataAttachment, options);
+                break;
+            case ReplyKeyboardAttachment replyKeyboardAttachment:
+                JsonSerializer.Serialize(writer, replyKeyboardAttachment, options);
+                break;
+            case UnknownAttachment unknownAttachment:
+                using (var document = JsonDocument.Parse(unknownAttachment.RawJson))
+                {
+                    document.RootElement.WriteTo(writer);
+                }
+
                 break;
             default:
                 throw new JsonException($"Unknown attachment type: {value.GetType()}");

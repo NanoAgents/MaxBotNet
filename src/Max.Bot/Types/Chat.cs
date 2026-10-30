@@ -57,6 +57,7 @@ public class Chat
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "LastEventTime cannot be negative.")]
     [JsonPropertyName("last_event_time")]
+    [JsonConverter(typeof(Converters.NullAsDefaultConverter<long>))]
     public long LastEventTime { get; set; }
 
     /// <summary>
@@ -65,6 +66,7 @@ public class Chat
     /// </summary>
     [Range(0, int.MaxValue, ErrorMessage = "ParticipantsCount cannot be negative.")]
     [JsonPropertyName("participants_count")]
+    [JsonConverter(typeof(Converters.NullAsDefaultConverter<int>))]
     public int ParticipantsCount { get; set; }
 
     /// <summary>

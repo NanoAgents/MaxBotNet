@@ -15,6 +15,7 @@ public class Subscription
     /// </summary>
     /// <value>The webhook URL.</value>
     [JsonPropertyName("url")]
+    [JsonConverter(typeof(Converters.NullAsEmptyStringConverter))]
     public string Url { get; set; } = string.Empty;
 
     /// <summary>
@@ -30,6 +31,12 @@ public class Subscription
     /// <value>The secret string, if set.</value>
     [JsonPropertyName("secret")]
     public string? Secret { get; set; }
+
+    /// <summary>
+    /// Gets or sets the self-signed X.509 certificate (PEM) of the webhook endpoint, if one was provided.
+    /// </summary>
+    [JsonPropertyName("self_signed_cert")]
+    public string? SelfSignedCert { get; set; }
 
     /// <summary>
     /// Gets or sets the timestamp when the subscription was created.
@@ -51,6 +58,7 @@ public class Subscription
     /// Gets or sets the Unix time (milliseconds) when the subscription was created, as returned by MAX API.
     /// </summary>
     [JsonPropertyName("time")]
+    [JsonConverter(typeof(Converters.NullAsDefaultConverter<long>))]
     public long Time { get; set; }
 
     /// <summary>

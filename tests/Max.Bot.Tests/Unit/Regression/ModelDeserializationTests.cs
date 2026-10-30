@@ -288,6 +288,130 @@ public class ModelDeserializationTests
         result.FailedUserDetails.Should().ContainSingle().Which.ErrorCode.Should().Be("add.participant.privacy");
     }
 
+    public static TheoryData<string> OptionsKinds() => new() { "default", "library" };
+
+    private static JsonSerializerOptions GetOptions(string kind) => kind == "library" ? MaxJsonSerializer.Options : DefaultOptions;
+
+    /// <summary>
+    /// Review: fields made non-nullable must tolerate an explicit JSON null instead of failing the whole update.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(OptionsKinds))]
+    public void RequiredFields_WithExplicitNull_ShouldFallBackToDefaults(string optionsKind)
+    {
+        var options = GetOptions(optionsKind);
+
+        var message = JsonSerializer.Deserialize<Message>("""{"recipient":null,"timestamp":null,"sender":{"user_id":1,"first_name":null,"last_activity_time":null},"link":{"type":"forward","message":null},"body":{"mid":null,"seq":null,"text":null},"stat":{"views":null}}""", options)!;
+        message.Recipient.Should().NotBeNull();
+        message.Timestamp.Should().Be(0);
+        message.Sender!.FirstName.Should().BeEmpty();
+        message.Sender.LastActivityTime.Should().Be(0);
+        message.Link!.Message.Should().NotBeNull();
+        message.Body!.Mid.Should().BeEmpty();
+        message.Body.Seq.Should().Be(0);
+        message.Stat!.Views.Should().Be(0);
+
+        var chat = JsonSerializer.Deserialize<Chat>("""{"chat_id":1,"type":"chat","last_event_time":null,"participants_count":null}""", options)!;
+        chat.LastEventTime.Should().Be(0);
+        chat.ParticipantsCount.Should().Be(0);
+
+        var member = JsonSerializer.Deserialize<ChatMember>("""{"user_id":1,"first_name":null,"join_time":null,"last_access_time":null}""", options)!;
+        member.FirstName.Should().BeEmpty();
+        member.JoinTime.Should().Be(0);
+
+        var video = JsonSerializer.Deserialize<Video>("""{"token":null,"width":null,"height":null,"duration":null,"thumbnail":{"url":null}}""", options)!;
+        video.Token.Should().BeEmpty();
+        video.Width.Should().Be(0);
+        video.Thumbnail!.Url.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// Review: the generic enum converter in MaxJsonSerializer.Options shadowed UpdateTypeJsonConverter,
+    /// so an update type unknown to the library broke GET /subscriptions.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(OptionsKinds))]
+    public void Subscription_WithUnknownUpdateType_ShouldMapItToUnknown(string optionsKind)
+    {
+        var subscription = JsonSerializer.Deserialize<Subscription>("""{"url":"https://bot","time":1,"update_types":["comment_created","message_created"],"version":"0.0.30"}""", GetOptions(optionsKind))!;
+
+        subscription.UpdateTypes.Should().Equal(UpdateType.Unknown, UpdateType.MessageCreated);
+        MaxJsonSerializer.Serialize(new List<UpdateType> { UpdateType.MessageCallback }).Should().Be("""["message_callback"]""");
+    }
+
+    [Fact]
+    public void ReplyKeyboard_ShouldDeserializeAndBuildRequest()
+    {
+        var attachment = JsonSerializer.Deserialize<Attachment>("""{"type":"reply_keyboard","buttons":[[{"type":"message","text":"Yes","payload":"yes"},{"type":"user_geo_location","text":"Where","quick":true}]]}""");
+
+        var keyboard = attachment.Should().BeOfType<ReplyKeyboardAttachment>().Subject;
+        keyboard.Buttons.Should().ContainSingle().Which.Should().HaveCount(2);
+        keyboard.Buttons[0][0].Type.Should().Be(ReplyButtonType.Message);
+        keyboard.Buttons[0][1].Quick.Should().BeTrue();
+
+        var request = Max.Bot.Types.Requests.AttachmentRequest.ReplyKeyboard(
+            new[] { new[] { ReplyKeyboardButton.Message("Yes", "yes"), ReplyKeyboardButton.Contact("Phone") } },
+            direct: true);
+        MaxJsonSerializer.Serialize(request).Should().Be("""{"type":"reply_keyboard","buttons":[[{"type":"message","text":"Yes","payload":"yes"},{"type":"user_contact","text":"Phone"}]],"direct":true}""");
+    }
+
+    [Fact]
+    public void TypedUpdateWrappers_ShouldDeserializeDirectlyFromApiJson()
+    {
+        var started = JsonSerializer.Deserialize<BotStartedUpdate>("""{"update_type":"bot_started","timestamp":10,"chat_id":77,"user":{"user_id":5,"first_name":"Ann"},"payload":"ref","user_locale":"ru"}""")!;
+        started.ChatId.Should().Be(77);
+        started.User.Id.Should().Be(5);
+        started.Payload.Should().Be("ref");
+        started.UserLocale.Should().Be("ru");
+
+        var removed = JsonSerializer.Deserialize<MessageRemovedUpdate>("""{"update_type":"message_removed","timestamp":1,"message_id":"mid.1","chat_id":-5,"user_id":9}""")!;
+        removed.MessageId.Should().Be("mid.1");
+        removed.ChatId.Should().Be(-5);
+        removed.UserId.Should().Be(9);
+    }
+
+    [Fact]
+    public void TypedUpdateWrappers_ShouldDeriveValuesMaxDoesNotSendExplicitly()
+    {
+        var added = JsonSerializer.Deserialize<Update>("""{"update_type":"bot_added","timestamp":1,"chat_id":-1,"user":{"user_id":42,"first_name":"Admin"},"is_channel":false}""")!;
+        added.BotAddedUpdate!.InviterId.Should().Be(42);
+        added.IsChatInferred.Should().BeFalse();
+
+        var muted = JsonSerializer.Deserialize<Update>("""{"update_type":"dialog_muted","timestamp":1,"chat_id":7,"user":{"user_id":1},"muted_until":99}""")!;
+        muted.DialogMutedUpdate!.IsMuted.Should().BeTrue();
+        muted.DialogMutedUpdate.MutedUntil.Should().Be(99);
+
+        var unmuted = JsonSerializer.Deserialize<Update>("""{"update_type":"dialog_unmuted","timestamp":1,"chat_id":7,"user":{"user_id":1}}""")!;
+        unmuted.DialogUnmutedUpdate!.IsMuted.Should().BeFalse();
+
+        var created = JsonSerializer.Deserialize<Update>(MessageCreatedJson)!;
+        created.IsChatInferred.Should().BeTrue("the chat of a message update is built from message.recipient");
+    }
+
+    [Fact]
+    public void VideoUrls_ShouldBeTyped()
+    {
+        var video = JsonSerializer.Deserialize<Video>("""{"token":"t","urls":{"mp4_1080":null,"mp4_720":"https://v/720","hls":"https://v/hls","mp4_4k":"https://v/4k"},"width":1,"height":1,"duration":1}""")!;
+
+        video.Urls!.Mp4P1080.Should().BeNull();
+        video.Urls.Mp4P720.Should().Be("https://v/720");
+        video.Urls.Hls.Should().Be("https://v/hls");
+        video.Urls.BestMp4.Should().Be("https://v/720");
+        video.Urls.AdditionalUrls.Should().ContainKey("mp4_4k");
+    }
+
+    [Fact]
+    public void WebhookAndChatRequests_ShouldSerializeSchemaFields()
+    {
+        var webhook = new Max.Bot.Types.Requests.SetWebhookRequest { Url = "https://bot", Version = "0.0.30", SelfSignedCert = "PEM" };
+        MaxJsonSerializer.Serialize(webhook).Should().Be("""{"url":"https://bot","self_signed_cert":"PEM","version":"0.0.30"}""");
+
+        var chat = new Max.Bot.Types.Requests.UpdateChatRequest { Icon = new Max.Bot.Types.Requests.ImageAttachmentRequestPayload { Url = "https://icon" } };
+        MaxJsonSerializer.Serialize(chat).Should().Be("""{"icon":{"url":"https://icon"}}""");
+
+        JsonSerializer.Deserialize<User>("""{"user_id":1,"first_name":"Bot","is_bot":true,"is_official":true}""")!.IsOfficial.Should().BeTrue();
+    }
+
     private static void AssertTypedMessageCreatedUpdate(Update update)
     {
         update.Type.Should().Be(UpdateType.MessageCreated);

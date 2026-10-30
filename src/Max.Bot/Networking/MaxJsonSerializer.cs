@@ -21,10 +21,12 @@ public static class MaxJsonSerializer
         PropertyNameCaseInsensitive = true,
         Converters =
         {
+            // * UpdateTypeJsonConverter must precede the generic enum converter: the first matching converter wins,
+            // * and it maps update types unknown to this library version to UpdateType.Unknown instead of throwing.
+            new Types.Converters.UpdateTypeJsonConverter(),
             new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower),
             new UnixTimestampJsonConverter(),
-            new Types.Converters.AttachmentJsonConverter(),
-            new Types.Converters.UpdateTypeJsonConverter()
+            new Types.Converters.AttachmentJsonConverter()
         }
     };
 

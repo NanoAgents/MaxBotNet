@@ -8,9 +8,10 @@ namespace Max.Bot.Types.Converters;
 /// and reads both snake_case and PascalCase names case-insensitively.
 /// </summary>
 /// <remarks>
-/// Every enum of the library is marked with this converter, so enum values are (de)serialized correctly with any
-/// <see cref="JsonSerializerOptions"/> — including <c>JsonSerializer.Deserialize&lt;MessageLinkType&gt;("\"reply\"")</c>
-/// with default options — and not only with <see cref="Networking.MaxJsonSerializer.Options"/>.
+/// Every enum of the library is marked with this converter, so enum values are (de)serialized correctly not only with
+/// <see cref="Networking.MaxJsonSerializer.Options"/> but also with default options, for example
+/// <c>JsonSerializer.Deserialize&lt;MessageLinkType&gt;("\"reply\"")</c>. An enum converter registered in
+/// <see cref="JsonSerializerOptions.Converters"/> takes precedence over this attribute.
 /// An unknown string value throws <see cref="JsonException"/>; library response models use
 /// <see cref="LenientNullableEnumConverter{TEnum}"/> where MAX may add new values.
 /// </remarks>
