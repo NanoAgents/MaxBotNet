@@ -82,7 +82,7 @@ public sealed class KeyboardBotSample : IBotSample
             Notification = responseText
         };
 
-        await context.Api.Messages.AnswerCallbackQueryAsync(callback.CallbackId ?? string.Empty, request, cancellationToken).ConfigureAwait(false);
+        await context.Api.Messages.AnswerCallbackQueryAsync(callback.CallbackId, request, cancellationToken).ConfigureAwait(false);
         sampleContext.Output.WriteLine($"Callback '{callback.Payload}' processed.");
     }
 }

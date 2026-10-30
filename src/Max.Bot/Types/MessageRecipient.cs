@@ -1,4 +1,6 @@
 using System.Text.Json.Serialization;
+using Max.Bot.Types.Converters;
+using Max.Bot.Types.Enums;
 
 namespace Max.Bot.Types;
 
@@ -9,18 +11,18 @@ public class MessageRecipient
 {
     /// <summary>
     /// Gets or sets the chat ID of the recipient.
-    /// For direct messages (dialogs), this can be null or 0.
     /// </summary>
-    /// <value>The unique identifier of the chat, or null/0 for direct messages.</value>
+    /// <value>The unique identifier of the chat, or <c>null</c> if MAX did not send it.</value>
     [JsonPropertyName("chat_id")]
     public long? ChatId { get; set; }
 
     /// <summary>
-    /// Gets or sets the type of the chat.
+    /// Gets or sets the type of the chat: <see cref="Enums.ChatType.Dialog"/>, <see cref="Enums.ChatType.Chat"/> or <see cref="Enums.ChatType.Channel"/>.
     /// </summary>
-    /// <value>The type of the chat (e.g., "dialog", "group", "channel").</value>
+    /// <value>The type of the chat, or <c>null</c> if it is missing or unknown to this library version.</value>
     [JsonPropertyName("chat_type")]
-    public string? ChatType { get; set; }
+    [JsonConverter(typeof(LenientNullableEnumConverter<ChatType>))]
+    public ChatType? ChatType { get; set; }
 
     /// <summary>
     /// Gets or sets the user ID of the recipient (for dialogs).
@@ -29,4 +31,3 @@ public class MessageRecipient
     [JsonPropertyName("user_id")]
     public long? UserId { get; set; }
 }
-

@@ -11,7 +11,7 @@ public class ChatMembersResponse
     /// Gets or sets the chat members.
     /// </summary>
     [JsonPropertyName("members")]
-    public ChatMember[] Members { get; set; } = default!;
+    public ChatMember[] Members { get; set; } = Array.Empty<ChatMember>();
 
     /// <summary>
     /// Gets or sets the marker for the next page.

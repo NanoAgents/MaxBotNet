@@ -159,7 +159,7 @@ public class SampleBotsTests
             UpdateTypeRaw = "message_created",
             Message = new Message
             {
-                Recipient = new MessageRecipient { ChatId = 1337, ChatType = "chat" },
+                Recipient = new MessageRecipient { ChatId = 1337, ChatType = ChatType.Chat },
                 Body = new MessageBody { Mid = "mid.sample.1", Text = text },
                 Timestamp = 1609459200000
             }

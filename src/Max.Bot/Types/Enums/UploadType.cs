@@ -1,39 +1,35 @@
 using System.Text.Json.Serialization;
+using Max.Bot.Types.Converters;
 
 namespace Max.Bot.Types.Enums;
 
 /// <summary>
 /// Represents the type of file to upload.
 /// </summary>
+[JsonConverter(typeof(JsonSnakeCaseEnumConverter<UploadType>))]
 public enum UploadType
 {
     /// <summary>
     /// Image file.
+    /// Serialized as <c>"image"</c>.
     /// </summary>
-    [JsonPropertyName("image")]
     Image,
 
     /// <summary>
     /// Video file.
+    /// Serialized as <c>"video"</c>.
     /// </summary>
-    [JsonPropertyName("video")]
     Video,
 
     /// <summary>
     /// Audio file.
+    /// Serialized as <c>"audio"</c>.
     /// </summary>
-    [JsonPropertyName("audio")]
     Audio,
 
     /// <summary>
     /// Generic file.
+    /// Serialized as <c>"file"</c>.
     /// </summary>
-    [JsonPropertyName("file")]
     File
 }
-
-
-
-
-
-

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Max.Bot.Types.Converters;
 
 namespace Max.Bot.Types.Enums;
 
@@ -6,7 +7,7 @@ namespace Max.Bot.Types.Enums;
 /// Represents the intent/style of a callback button.
 /// Affects how the button is displayed by the client.
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonSnakeCaseEnumConverter<ButtonIntent>))]
 public enum ButtonIntent
 {
     /// <summary>
@@ -24,4 +25,3 @@ public enum ButtonIntent
     /// </summary>
     Negative
 }
-

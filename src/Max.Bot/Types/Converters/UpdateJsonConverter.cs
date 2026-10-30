@@ -38,7 +38,7 @@ public class UpdateJsonConverter : JsonConverter<Update>
             update.UpdateTypeRaw = updateTypeElement.GetString();
         }
 
-        update.Timestamp = GetInt64(root, "timestamp");
+        update.Timestamp = GetInt64(root, "timestamp") ?? 0;
 
         update.UserLocale = GetString(root, "user_locale");
 
@@ -130,7 +130,7 @@ public class UpdateJsonConverter : JsonConverter<Update>
 
         var inferredChatId = update.ChatId == null ? recipientChatId : (long?)null;
         Chat? inferredChat = null;
-        if (update.Chat == null && Update.TryParseChatType(recipient.ChatType, out var chatType))
+        if (update.Chat == null && recipient.ChatType is { } chatType)
         {
             inferredChat = new Chat
             {
@@ -184,10 +184,7 @@ public class UpdateJsonConverter : JsonConverter<Update>
             writer.WriteString("update_type", value.UpdateTypeRaw);
         }
 
-        if (value.Timestamp.HasValue)
-        {
-            writer.WriteNumber("timestamp", value.Timestamp.Value);
-        }
+        writer.WriteNumber("timestamp", value.Timestamp);
 
         if (value.UserLocale != null)
         {

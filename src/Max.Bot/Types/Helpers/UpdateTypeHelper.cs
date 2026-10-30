@@ -40,7 +40,7 @@ public static class UpdateTypeHelper
     /// <summary>
     /// Converts a string representation to <see cref="UpdateType"/> enum.
     /// </summary>
-    /// <param name="updateTypeString">The snake_case string (e.g., "message_created").</param>
+    /// <param name="updateTypeString">The snake_case string (e.g., "message_created"); PascalCase names (e.g., "MessageCreated") are accepted too.</param>
     /// <returns>The corresponding <see cref="UpdateType"/> enum value, or <see cref="UpdateType.Unknown"/> if not recognized.</returns>
     public static UpdateType FromString(string? updateTypeString)
     {
@@ -65,7 +65,7 @@ public static class UpdateTypeHelper
             "user_removed" => UpdateType.UserRemoved,
             "chat_title_changed" => UpdateType.ChatTitleChanged,
             "message_chat_created" => UpdateType.MessageChatCreated,
-            _ => UpdateType.Unknown
+            _ => Converters.LenientEnumParser.TryParse<UpdateType>(updateTypeString, out var parsed) ? parsed : UpdateType.Unknown
         };
     }
 

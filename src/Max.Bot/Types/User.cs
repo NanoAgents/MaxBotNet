@@ -27,10 +27,11 @@ public class User
     /// <summary>
     /// Gets or sets the first name of the user.
     /// </summary>
-    /// <value>The first name of the user, or null if not available.</value>
+    /// <value>The first name of the user. Always sent by MAX API.</value>
     [StringLength(64, ErrorMessage = "First name must not exceed 64 characters.")]
     [JsonPropertyName("first_name")]
-    public string? FirstName { get; set; }
+    [JsonConverter(typeof(Converters.NullAsEmptyStringConverter))]
+    public string FirstName { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the last name of the user.
@@ -53,7 +54,8 @@ public class User
     /// <value>The timestamp of the user's last activity.</value>
     [Range(0, long.MaxValue, ErrorMessage = "Last activity time cannot be negative.")]
     [JsonPropertyName("last_activity_time")]
-    public long? LastActivityTime { get; set; }
+    [JsonConverter(typeof(Converters.NullAsDefaultConverter<long>))]
+    public long LastActivityTime { get; set; }
 
     /// <summary>
     /// Gets or sets the deprecated display name.
@@ -86,5 +88,11 @@ public class User
     [MaxLength(32, ErrorMessage = "Commands must not exceed 32 items.")]
     [JsonPropertyName("commands")]
     public BotCommand[]? Commands { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the bot is official. Returned by <c>GET /me</c>.
+    /// </summary>
+    [JsonPropertyName("is_official")]
+    public bool? IsOfficial { get; set; }
 }
 

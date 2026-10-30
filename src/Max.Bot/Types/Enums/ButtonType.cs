@@ -1,11 +1,12 @@
 using System.Text.Json.Serialization;
+using Max.Bot.Types.Converters;
 
 namespace Max.Bot.Types.Enums;
 
 /// <summary>
 /// Represents the type of an inline keyboard button.
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonSnakeCaseEnumConverter<ButtonType>))]
 public enum ButtonType
 {
     /// <summary>
@@ -42,13 +43,12 @@ public enum ButtonType
     /// <summary>
     /// Clipboard button - copies <see cref="InlineKeyboardButton.Payload"/> to the user's clipboard.
     /// </summary>
-    Clipboard
+    Clipboard,
+
+    /// <summary>
+    /// Chat button (<c>chat</c>) - creates a new chat with the bot as administrator when the first user presses it.
+    /// Configured by <see cref="InlineKeyboardButton.ChatTitle"/>, <see cref="InlineKeyboardButton.ChatDescription"/>,
+    /// <see cref="InlineKeyboardButton.StartPayload"/> and <see cref="InlineKeyboardButton.Uuid"/>.
+    /// </summary>
+    Chat
 }
-
-
-
-
-
-
-
-

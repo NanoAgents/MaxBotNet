@@ -5,6 +5,8 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using Max.Bot.Types.Converters;
+using Max.Bot.Types.Enums;
 
 namespace Max.Bot.Types;
 
@@ -16,6 +18,7 @@ public class Message
 {
     /// <summary>
     /// Gets or sets the user who sent the message.
+    /// Can be <c>null</c> if the message was posted on behalf of a channel.
     /// Maps to "sender" field from API.
     /// </summary>
     [JsonPropertyName("sender")]
@@ -23,10 +26,11 @@ public class Message
 
     /// <summary>
     /// Gets or sets the recipient of the message.
-    /// Can be a user or a chat.
+    /// Can be a user or a chat. Always present in MAX API responses.
     /// </summary>
     [JsonPropertyName("recipient")]
-    public MessageRecipient? Recipient { get; set; }
+    [JsonConverter(typeof(Converters.NullAsNewConverter<MessageRecipient>))]
+    public MessageRecipient Recipient { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the timestamp when the message was created (Unix timestamp in milliseconds).
@@ -34,7 +38,8 @@ public class Message
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Timestamp cannot be negative.")]
     [JsonPropertyName("timestamp")]
-    public long? Timestamp { get; set; }
+    [JsonConverter(typeof(Converters.NullAsDefaultConverter<long>))]
+    public long Timestamp { get; set; }
 
     /// <summary>
     /// Gets or sets the linked message (forwarded or reply message).
@@ -53,6 +58,7 @@ public class Message
 
     /// <summary>
     /// Gets or sets the statistics of the message.
+    /// Available only for channel messages returned by GET /messages.
     /// Maps to "stat" field from API.
     /// </summary>
     [JsonPropertyName("stat")]
@@ -97,20 +103,22 @@ public class Message
 public class LinkedMessage
 {
     /// <summary>
-    /// Gets or sets the type of link.
-    /// Possible values: "forward", "reply".
+    /// Gets or sets the type of link: <see cref="MessageLinkType.Forward"/> or <see cref="MessageLinkType.Reply"/>.
     /// </summary>
+    /// <value>The link type, or <c>null</c> if MAX sent a value unknown to this library version.</value>
     [JsonPropertyName("type")]
-    public string? Type { get; set; }
+    [JsonConverter(typeof(LenientNullableEnumConverter<MessageLinkType>))]
+    public MessageLinkType? Type { get; set; }
 
     /// <summary>
     /// Gets or sets the user who sent the original message.
+    /// Can be <c>null</c> if the message was posted on behalf of a channel.
     /// </summary>
     [JsonPropertyName("sender")]
     public User? Sender { get; set; }
 
     /// <summary>
-    /// Gets or sets the chat where the message was sent.
+    /// Gets or sets the chat where the message was originally posted. Present for forwarded messages only.
     /// </summary>
     [JsonPropertyName("chat_id")]
     public long? ChatId { get; set; }
@@ -120,7 +128,8 @@ public class LinkedMessage
     /// Note: In API this is called "message" but contains only MessageBody fields, not full Message.
     /// </summary>
     [JsonPropertyName("message")]
-    public MessageBody? Message { get; set; }
+    [JsonConverter(typeof(Converters.NullAsNewConverter<MessageBody>))]
+    public MessageBody Message { get; set; } = new();
 
     /// <summary>
     /// Gets the text content of the linked message.
@@ -132,13 +141,13 @@ public class LinkedMessage
     /// Gets the message ID of the linked message.
     /// </summary>
     [JsonIgnore]
-    public string? Mid => Message?.Mid;
+    public string Mid => Message?.Mid ?? string.Empty;
 
     /// <summary>
     /// Gets the sequence number of the linked message.
     /// </summary>
     [JsonIgnore]
-    public long? Seq => Message?.Seq;
+    public long Seq => Message?.Seq ?? 0;
 }
 
 /// <summary>
@@ -151,7 +160,8 @@ public class MessageBody
     /// Gets or sets the message ID.
     /// </summary>
     [JsonPropertyName("mid")]
-    public string? Mid { get; set; }
+    [JsonConverter(typeof(Converters.NullAsEmptyStringConverter))]
+    public string Mid { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the sequence number of the message.
@@ -159,7 +169,8 @@ public class MessageBody
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "Sequence number cannot be negative.")]
     [JsonPropertyName("seq")]
-    public long? Seq { get; set; }
+    [JsonConverter(typeof(Converters.NullAsDefaultConverter<long>))]
+    public long Seq { get; set; }
 
     /// <summary>
     /// Gets or sets the text content of the message.
@@ -198,7 +209,8 @@ public class MessageStat
     /// </summary>
     [Range(0, int.MaxValue, ErrorMessage = "Views cannot be negative.")]
     [JsonPropertyName("views")]
-    public int? Views { get; set; }
+    [JsonConverter(typeof(Converters.NullAsDefaultConverter<int>))]
+    public int Views { get; set; }
 }
 
 /// <summary>
@@ -207,10 +219,12 @@ public class MessageStat
 public class MarkupElement
 {
     /// <summary>
-    /// Gets or sets the markup type (strong, emphasized, monospaced, link, strikethrough, underline, user_mention, heading, highlighted).
+    /// Gets or sets the markup type (strong, emphasized, monospaced, link, strikethrough, underline, user_mention, heading, highlighted, quote).
     /// </summary>
+    /// <value>The markup type, or <c>null</c> if MAX sent a value unknown to this library version.</value>
     [JsonPropertyName("type")]
-    public string? Type { get; set; }
+    [JsonConverter(typeof(LenientNullableEnumConverter<MarkupType>))]
+    public MarkupType? Type { get; set; }
 
     /// <summary>
     /// Gets or sets the start position (in UTF-16 code units) of the element in the text.

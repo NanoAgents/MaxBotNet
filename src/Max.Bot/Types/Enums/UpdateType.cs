@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Max.Bot.Types.Converters;
 
 namespace Max.Bot.Types.Enums;
 
@@ -6,6 +7,7 @@ namespace Max.Bot.Types.Enums;
 /// Represents the type of an update from Max Messenger API.
 /// Maps to the "update_type" field in the API response.
 /// </summary>
+[JsonConverter(typeof(UpdateTypeJsonConverter))]
 public enum UpdateType
 {
     /// <summary>

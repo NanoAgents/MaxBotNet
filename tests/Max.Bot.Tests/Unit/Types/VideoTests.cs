@@ -41,9 +41,9 @@ public class VideoTests
         video.Should().NotBeNull();
         video.Id.Should().Be(123);
         video.FileId.Should().Be("video123");
-        video.Width.Should().BeNull();
-        video.Height.Should().BeNull();
-        video.Duration.Should().BeNull();
+        video.Width.Should().Be(0);
+        video.Height.Should().Be(0);
+        video.Duration.Should().Be(0);
         video.FileSize.Should().BeNull();
         video.MimeType.Should().BeNull();
         video.Url.Should().BeNull();

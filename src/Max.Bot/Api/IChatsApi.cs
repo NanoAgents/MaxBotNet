@@ -225,18 +225,35 @@ public interface IChatsApi
     Task<ChatMembersResponse> GetChatMembersPageAsync(long chatId, long? marker = null, int? count = null, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets the membership of the specified users in a chat (<c>GET /chats/{chatId}/members?user_ids=...</c>).
+    /// </summary>
+    /// <param name="chatId">The unique identifier of the chat.</param>
+    /// <param name="userIds">Identifiers of the users to look up. Users that are not members are absent from the result.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the found members.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when userIds is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when userIds is empty.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxApiException">Thrown when the API returns an error response.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxNetworkException">Thrown when a network error occurs.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxUnauthorizedException">Thrown when authentication fails.</exception>
+    Task<ChatMember[]> GetChatMembersByIdsAsync(long chatId, IEnumerable<long> userIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Adds members to a chat.
     /// </summary>
     /// <param name="chatId">The unique identifier of the chat.</param>
     /// <param name="request">The request containing the user IDs to add.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the response with success status.</returns>
+    /// <returns>
+    /// A task that represents the asynchronous operation. The task result contains the success status and
+    /// the users that could not be added (<see cref="ModifyMembersResponse.FailedUserIds"/>, <see cref="ModifyMembersResponse.FailedUserDetails"/>).
+    /// </returns>
     /// <exception cref="ArgumentException">Thrown when chatId is less than or equal to zero.</exception>
     /// <exception cref="ArgumentNullException">Thrown when request is null.</exception>
     /// <exception cref="Max.Bot.Exceptions.MaxApiException">Thrown when the API returns an error response.</exception>
     /// <exception cref="Max.Bot.Exceptions.MaxNetworkException">Thrown when a network error occurs.</exception>
     /// <exception cref="Max.Bot.Exceptions.MaxUnauthorizedException">Thrown when authentication fails.</exception>
-    Task<Response> AddChatMembersAsync(long chatId, AddChatMembersRequest request, CancellationToken cancellationToken = default);
+    Task<ModifyMembersResponse> AddChatMembersAsync(long chatId, AddChatMembersRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Removes a member from a chat.
@@ -250,5 +267,19 @@ public interface IChatsApi
     /// <exception cref="Max.Bot.Exceptions.MaxNetworkException">Thrown when a network error occurs.</exception>
     /// <exception cref="Max.Bot.Exceptions.MaxUnauthorizedException">Thrown when authentication fails.</exception>
     Task<Response> RemoveChatMemberAsync(long chatId, long userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Removes a member from a chat and optionally blocks them (<c>DELETE /chats/{chatId}/members?user_id=...&amp;block=...</c>).
+    /// </summary>
+    /// <param name="chatId">The unique identifier of the chat.</param>
+    /// <param name="userId">The unique identifier of the user to remove.</param>
+    /// <param name="block"><c>true</c> to block the user in the chat. Applies only to chats with a public or private link.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the response with success status.</returns>
+    /// <exception cref="ArgumentException">Thrown when userId is less than or equal to zero.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxApiException">Thrown when the API returns an error response.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxNetworkException">Thrown when a network error occurs.</exception>
+    /// <exception cref="Max.Bot.Exceptions.MaxUnauthorizedException">Thrown when authentication fails.</exception>
+    Task<Response> RemoveChatMemberAsync(long chatId, long userId, bool block, CancellationToken cancellationToken = default);
 }
 

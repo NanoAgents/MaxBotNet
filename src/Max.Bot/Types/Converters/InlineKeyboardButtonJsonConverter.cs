@@ -30,10 +30,7 @@ public class InlineKeyboardButtonJsonConverter : JsonConverter<InlineKeyboardBut
         var button = new InlineKeyboardButton();
 
         // Read text (required)
-        if (root.TryGetProperty("text", out var textElement))
-        {
-            button.Text = textElement.GetString() ?? string.Empty;
-        }
+        button.Text = GetString(root, "text") ?? string.Empty;
 
         // Read type (new format)
         if (root.TryGetProperty("type", out var typeElement) && typeElement.ValueKind == JsonValueKind.String)
@@ -46,7 +43,7 @@ public class InlineKeyboardButtonJsonConverter : JsonConverter<InlineKeyboardBut
         }
 
         // Read payload (new format)
-        if (root.TryGetProperty("payload", out var payloadElement))
+        if (root.TryGetProperty("payload", out var payloadElement) && payloadElement.ValueKind != JsonValueKind.Null)
         {
             button.Payload = payloadElement.ValueKind == JsonValueKind.String
                 ? payloadElement.GetString()
@@ -54,9 +51,9 @@ public class InlineKeyboardButtonJsonConverter : JsonConverter<InlineKeyboardBut
         }
 
         // Read url (for link buttons)
-        if (root.TryGetProperty("url", out var urlElement))
+        if (GetString(root, "url") is { } url)
         {
-            button.Url = urlElement.GetString();
+            button.Url = url;
             if (button.Type == default(ButtonType) && !string.IsNullOrEmpty(button.Url))
             {
                 button.Type = ButtonType.Link;
@@ -64,9 +61,8 @@ public class InlineKeyboardButtonJsonConverter : JsonConverter<InlineKeyboardBut
         }
 
         // Handle legacy callback_data format (for backward compatibility)
-        if (root.TryGetProperty("callback_data", out var callbackDataElement))
+        if (GetString(root, "callback_data") is { } callbackData)
         {
-            var callbackData = callbackDataElement.GetString();
             if (!string.IsNullOrEmpty(callbackData))
             {
                 button.Type = ButtonType.Callback;
@@ -87,6 +83,14 @@ public class InlineKeyboardButtonJsonConverter : JsonConverter<InlineKeyboardBut
         if (root.TryGetProperty("quick", out var quickElement) && quickElement.ValueKind is JsonValueKind.True or JsonValueKind.False)
         {
             button.Quick = quickElement.GetBoolean();
+        }
+
+        button.ChatTitle = GetString(root, "chat_title");
+        button.ChatDescription = GetString(root, "chat_description");
+        button.StartPayload = GetString(root, "start_payload");
+        if (root.TryGetProperty("uuid", out var uuidElement) && uuidElement.ValueKind == JsonValueKind.Number && uuidElement.TryGetInt64(out var uuid))
+        {
+            button.Uuid = uuid;
         }
 
         // Read intent (for callback buttons)
@@ -150,6 +154,26 @@ public class InlineKeyboardButtonJsonConverter : JsonConverter<InlineKeyboardBut
             writer.WriteBoolean("quick", value.Quick.Value);
         }
 
+        if (value.ChatTitle != null)
+        {
+            writer.WriteString("chat_title", value.ChatTitle);
+        }
+
+        if (value.ChatDescription != null)
+        {
+            writer.WriteString("chat_description", value.ChatDescription);
+        }
+
+        if (value.StartPayload != null)
+        {
+            writer.WriteString("start_payload", value.StartPayload);
+        }
+
+        if (value.Uuid.HasValue)
+        {
+            writer.WriteNumber("uuid", value.Uuid.Value);
+        }
+
         // Write intent (for callback buttons)
         if (value.Intent.HasValue)
         {
@@ -158,6 +182,13 @@ public class InlineKeyboardButtonJsonConverter : JsonConverter<InlineKeyboardBut
         }
 
         writer.WriteEndObject();
+    }
+
+    private static string? GetString(JsonElement root, string propertyName)
+    {
+        return root.TryGetProperty(propertyName, out var element) && element.ValueKind == JsonValueKind.String
+            ? element.GetString()
+            : null;
     }
 
     private static bool TryParseButtonIntent(string? value, out ButtonIntent intent)

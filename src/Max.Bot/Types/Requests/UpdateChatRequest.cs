@@ -17,7 +17,7 @@ public class UpdateChatRequest
     /// If null, the icon is not changed.
     /// </value>
     [JsonPropertyName("icon")]
-    public object? Icon { get; set; }
+    public ImageAttachmentRequestPayload? Icon { get; set; }
 
     /// <summary>
     /// Gets or sets the chat title.

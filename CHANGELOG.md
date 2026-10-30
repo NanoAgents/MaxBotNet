@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0-alpha] - 2026-10-30
+
+Модели приведены к [OpenAPI-схеме MAX Bot API](https://github.com/max-messenger/max-bot-api-client-go/blob/main/schema.yaml): строковые и `object`-поля стали типизированными, а nullability совпадает с документацией — меньше ручного разбора и null-проверок. Спасибо @diquoks за отзыв!
+
+### Breaking Changes
+
+- **Typed enums instead of strings**: `LinkedMessage.Type` — `MessageLinkType?` (было `string`), `MessageRecipient.ChatType` — `ChatType?` (было `string`), `MarkupElement.Type` — новый enum `MarkupType?`. Неизвестное библиотеке значение превращается в `null`, а не роняет разбор апдейта.
+- **Typed inline keyboard**: `InlineKeyboardAttachment.Payload` — `InlineKeyboard` с `InlineKeyboardButton[][] Buttons` (было `Dictionary<string, object>` с `JsonElement` внутри); добавлен шорткат `InlineKeyboardAttachment.Buttons`.
+- **Typed dictionaries and objects**: `Chat.Participants` — `Dictionary<long, long>?` (user id → время последней активности), `Image.Photos` — `Dictionary<string, PhotoSizeToken>?` (было `object`), `Video.Urls` — `VideoUrls` с `Mp4P1080`…`Mp4P144`, `Hls` и `BestMp4` (было `Dictionary<string, string>`), `UpdateChatRequest.Icon` — `ImageAttachmentRequestPayload?` (было `object`).
+- **Unknown attachments**: вложение неизвестного библиотеке типа разбирается в `UnknownAttachment` с исходным JSON в `RawJson`, а не в пустой `DocumentAttachment`.
+- **Required fields are non-nullable** (по схеме они всегда приходят):
+  - `Message.Recipient` (`new()` по умолчанию), `Message.Timestamp` — `long`; `MessageBody.Mid` — `string`, `MessageBody.Seq` — `long`; `LinkedMessage.Message` — `MessageBody`, `LinkedMessage.Mid`/`Seq` — `string`/`long`; `MessageStat.Views` — `int`.
+  - `User.FirstName` — `string`, `User.LastActivityTime` — `long`; то же для `ChatMember` плюс `LastAccessTime`, `JoinTime` — `long`.
+  - `Chat.LastEventTime` — `long`, `Chat.ParticipantsCount` — `int`; `Image.Url` — `string`; `Subscription.Time` — `long`.
+  - `CallbackQuery.CallbackId` — `string`, `CallbackQuery.User` — `User`, `CallbackQuery.Timestamp` — `long`.
+  - `Update.Timestamp` и `Timestamp` всех типизированных обёрток — `long`. В обёртках обязательные поля тоже не nullable: `ChatId` (`long`), `User`, `IsChannel` (`bool`), `MessageRemovedUpdate.MessageId`/`UserId`, `ChatTitleChangedUpdate.Title`, `DialogMutedUpdate.MutedUntil`, `MessageChatCreatedUpdate.Chat`/`MessageId`.
+  - Вложения: `Url`/`Token` у фото, видео, аудио и файлов — `string`; `DocumentAttachment.FileName` — `string`, `FileSize` — `long`; у стикера `Url`/`Code` — `string`, `Width`/`Height` — `int`. `Video` (`GET /videos/{token}`): `Token` — `string`, `Width`/`Height`/`Duration` — `int`.
+  - Массивы в ответах (`GetMessagesResponse.Messages`, `ChatMembersResponse.Members`, `SubscriptionsResponse.Subscriptions`, `GetUpdatesResponse.Updates`) по умолчанию пустые, а не `null`.
+  - Явный `null` от API в этих полях не роняет разбор: он превращается в `0`, `""` или пустой объект.
+  - Осознанно остаются nullable: `Message.Body` (MAX присылает `null` для сообщений только с пересылкой), `Message.Sender`/`LinkedMessage.Sender` (сообщения от имени канала) и enum'ы с мягким разбором — `Chat.Status`, `LinkedMessage.Type`, `MessageRecipient.ChatType`, `MarkupElement.Type` (`null` для неизвестного значения).
+- **IChatsApi**: `AddChatMembersAsync` возвращает `ModifyMembersResponse` (наследник `Response`); новые члены интерфейса `GetChatMembersByIdsAsync` и `RemoveChatMemberAsync(chatId, userId, block)` — собственные реализации нужно дополнить.
+- **Enum members** больше не помечены `[JsonPropertyName]` — `System.Text.Json` его для enum'ов игнорирует; значение API описано в XML-доке.
+
+### Added
+
+- **Reply keyboard**: `ReplyKeyboardAttachment` во входящих сообщениях и `AttachmentRequest.ReplyKeyboard(buttons, direct, directUserId)` с кнопками `ReplyKeyboardButton.Message/GeoLocation/Contact` для отправки.
+- **Typed update wrappers are JSON-mapped**: `BotStartedUpdate`, `MessageRemovedUpdate` и остальные обёртки можно десериализовать прямо из JSON события. `BotAddedUpdate.InviterId` заполняется из `user` (MAX присылает пригласившего там), `DialogMutedUpdate`/`DialogUnmutedUpdate.IsMuted` — из типа события.
+- **Partial chat flag**: `Update.IsChatInferred`/`IsChatIdInferred` стали публичными — `Update.Chat` для сообщений собирается из `message.recipient` и содержит только `ChatId` и `Type`.
+- **Schema fields**: `User.IsOfficial` (`is_official`), `SetWebhookRequest.Version`/`SelfSignedCert`, `Subscription.SelfSignedCert`; `AttachmentTypeNames` стал публичным.
+- **Chat button**: `ButtonType.Chat` и поля `InlineKeyboardButton.ChatTitle`, `ChatDescription`, `StartPayload`, `Uuid` (кнопка `chat`, создающая чат).
+- **Data attachment**: `DataAttachment` (`type: "data"`) с payload нажатой кнопки reply-клавиатуры — раньше разбирался как пустой `DocumentAttachment`.
+- **Add members result**: `ModifyMembersResponse.FailedUserIds` и `FailedUserDetails` (`error_code`, `user_ids`) — кого не удалось добавить и почему.
+- **Chat members**: `GetChatMembersByIdsAsync(chatId, userIds)` (`user_ids`) и `RemoveChatMemberAsync(chatId, userId, block)` (`block=true` блокирует участника).
+- **`JsonSnakeCaseEnumConverter<TEnum>`** — snake_case-конвертер, которым помечены все enum'ы библиотеки.
+
+### Fixed
+
+- **Enum deserialization without library options**: `MessageLinkType`, `ChatAction`, `UploadType`, `ChatAdminPermission`, `UpdateType` и другие enum'ы не разбирались обычным `JsonSerializer` — например, `JsonSerializer.SerializeToElement("reply").Deserialize<MessageLinkType>()` падал с `JsonException`. Теперь у каждого enum'а есть `[JsonConverter]`, и модели разбираются одинаково с `MaxJsonSerializer.Options` и с опциями по умолчанию. Если в ваших `JsonSerializerOptions` зарегистрирован свой `JsonStringEnumConverter`, он имеет приоритет над атрибутом типа — для данных MAX используйте `MaxJsonSerializer.Options`.
+- **Unknown update types**: `UpdateTypeJsonConverter` в `MaxJsonSerializer.Options` перекрывался общим enum-конвертером, поэтому новый тип события (например, `comment_created`) в `GET /subscriptions` ронял весь ответ. Теперь он превращается в `UpdateType.Unknown`.
+- **Inline keyboard parsing**: кнопка с `"payload": null` больше не получает строку `"null"`; поля кнопки неожиданного типа и битый `payload` клавиатуры не роняют разбор всего сообщения.
+- **Validation limits**: `InlineKeyboardButton.Text` — до 128 символов, `InlineKeyboardButton.Payload` и `CallbackQuery.Payload` — до 1024 (было 64, по схеме MAX).
+- **Docs**: исправлены описания `BotAddedUpdate.User`/`BotRemovedUpdate.User` (это пригласивший/удаливший пользователь, а не бот), `Update.Message`, `Update.Title`; у `UpdateId` указано, что MAX не присылает `update_id`.
+- **UpdateTypeHelper.FromString** принимает и PascalCase (`"MessageCreated"`).
+
+### Changed
+
+- **Releases**: GitHub Release создаётся как Latest (не pre-release), даже для `-alpha` версий; при ручном запуске это можно отключить параметром `latest`.
+
 ## [0.7.1-alpha] - 2026-10-27
 
 ### Fixed
@@ -389,7 +437,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/NanoAgents/MaxBotNet/compare/v0.7.1-alpha...HEAD
+[Unreleased]: https://github.com/NanoAgents/MaxBotNet/compare/v0.8.0-alpha...HEAD
+[0.8.0-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.7.1-alpha...v0.8.0-alpha
 [0.7.1-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.7.0-alpha...v0.7.1-alpha
 [0.7.0-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.6.3-alpha...v0.7.0-alpha
 [0.6.3-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.6.2-alpha...v0.6.3-alpha

@@ -42,7 +42,7 @@ public class MessagesApiTests
         var expectedMessage = new Message
         {
             Timestamp = 1609459200000,
-            Recipient = new MessageRecipient { ChatId = chatId, ChatType = "chat" },
+            Recipient = new MessageRecipient { ChatId = chatId, ChatType = ChatType.Chat },
             Body = new MessageBody { Mid = "mid.789", Text = text }
         };
 
@@ -96,8 +96,8 @@ public class MessagesApiTests
         var chatId = 123456L;
         var expectedMessages = new[]
         {
-            new Message { Timestamp = 1609459200000, Recipient = new MessageRecipient { ChatId = chatId, ChatType = "chat" }, Body = new MessageBody { Mid = "mid.1", Text = "Message 1" } },
-            new Message { Timestamp = 1609459200000, Recipient = new MessageRecipient { ChatId = chatId, ChatType = "chat" }, Body = new MessageBody { Mid = "mid.2", Text = "Message 2" } }
+            new Message { Timestamp = 1609459200000, Recipient = new MessageRecipient { ChatId = chatId, ChatType = ChatType.Chat }, Body = new MessageBody { Mid = "mid.1", Text = "Message 1" } },
+            new Message { Timestamp = 1609459200000, Recipient = new MessageRecipient { ChatId = chatId, ChatType = ChatType.Chat }, Body = new MessageBody { Mid = "mid.2", Text = "Message 2" } }
         };
 
         var response = new GetMessagesResponse
@@ -209,7 +209,7 @@ public class MessagesApiTests
         var currentMessage = new Message
         {
             Text = "Test message",
-            Recipient = new MessageRecipient { ChatId = 456, ChatType = "chat" },
+            Recipient = new MessageRecipient { ChatId = 456, ChatType = ChatType.Chat },
             Body = new MessageBody
             {
                 Mid = "mid.current.123",
@@ -276,7 +276,7 @@ public class MessagesApiTests
         var currentMessage = new Message
         {
             Text = "Test message",
-            Recipient = new MessageRecipient { ChatId = 456, ChatType = "chat" },
+            Recipient = new MessageRecipient { ChatId = 456, ChatType = ChatType.Chat },
             Body = new MessageBody
             {
                 Mid = "mid.current.123",
@@ -404,7 +404,7 @@ public class MessagesApiTests
         {
             Text = "Test message",
             Timestamp = 1609459200000,
-            Recipient = new MessageRecipient { ChatId = 456, ChatType = "chat" },
+            Recipient = new MessageRecipient { ChatId = 456, ChatType = ChatType.Chat },
             Body = new MessageBody { Mid = "msg-123", Text = "Test message" }
         };
 
@@ -538,7 +538,7 @@ public class MessagesApiTests
         result.Height.Should().Be(1280);
         result.Duration.Should().Be(6633);
         result.Urls.Should().NotBeNull();
-        result.Urls!["mp4_720"].Should().Be("http://vd555.okcdn.ru/video.mp4");
+        result.Urls!.Mp4P720.Should().Be("http://vd555.okcdn.ru/video.mp4");
         result.Thumbnail.Should().NotBeNull();
         result.Thumbnail!.Url.Should().Be("https://pimg.mycdn.me/thumb.jpg");
     }
@@ -651,7 +651,7 @@ public class MessagesApiTests
         {
             Text = request.Text,
             Timestamp = 1609459200000,
-            Recipient = new MessageRecipient { ChatId = chatId, ChatType = "chat" },
+            Recipient = new MessageRecipient { ChatId = chatId, ChatType = ChatType.Chat },
             Body = new MessageBody { Mid = "mid.789", Text = request.Text }
         };
 
@@ -742,7 +742,7 @@ public class MessagesApiTests
         {
             Text = "With attachment",
             Timestamp = 1609459200000,
-            Recipient = new MessageRecipient { ChatId = chatId, ChatType = "chat" },
+            Recipient = new MessageRecipient { ChatId = chatId, ChatType = ChatType.Chat },
             Body = new MessageBody { Mid = "mid.789", Text = "With attachment" }
         };
 
@@ -801,7 +801,7 @@ public class MessagesApiTests
         {
             Text = "With attachment",
             Timestamp = 1609459200000,
-            Recipient = new MessageRecipient { ChatId = chatId, ChatType = "chat" },
+            Recipient = new MessageRecipient { ChatId = chatId, ChatType = ChatType.Chat },
             Body = new MessageBody { Mid = "mid.retry", Text = "With attachment" }
         };
 
@@ -839,7 +839,7 @@ public class MessagesApiTests
         {
             Text = "Forwarded",
             Timestamp = 1609459200000,
-            Recipient = new MessageRecipient { ChatId = chatId, ChatType = "chat" },
+            Recipient = new MessageRecipient { ChatId = chatId, ChatType = ChatType.Chat },
             Body = new MessageBody { Mid = "mid.999", Text = "Forwarded" }
         };
 
@@ -898,7 +898,7 @@ public class MessagesApiTests
         {
             Text = text,
             Timestamp = 1609459200000,
-            Recipient = new MessageRecipient { ChatId = chatId, ChatType = "chat" },
+            Recipient = new MessageRecipient { ChatId = chatId, ChatType = ChatType.Chat },
             Body = new MessageBody { Mid = "mid.999", Text = text }
         };
 

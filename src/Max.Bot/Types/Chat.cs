@@ -57,15 +57,17 @@ public class Chat
     /// </summary>
     [Range(0, long.MaxValue, ErrorMessage = "LastEventTime cannot be negative.")]
     [JsonPropertyName("last_event_time")]
-    public long? LastEventTime { get; set; }
+    [JsonConverter(typeof(Converters.NullAsDefaultConverter<long>))]
+    public long LastEventTime { get; set; }
 
     /// <summary>
     /// Gets or sets the number of participants in the chat.
     /// Always 2 for dialogs.
     /// </summary>
-    [Range(1, int.MaxValue, ErrorMessage = "ParticipantsCount must be greater than zero.")]
+    [Range(0, int.MaxValue, ErrorMessage = "ParticipantsCount cannot be negative.")]
     [JsonPropertyName("participants_count")]
-    public int? ParticipantsCount { get; set; }
+    [JsonConverter(typeof(Converters.NullAsDefaultConverter<int>))]
+    public int ParticipantsCount { get; set; }
 
     /// <summary>
     /// Gets or sets the ID of the chat owner.
@@ -75,11 +77,11 @@ public class Chat
     public long? OwnerId { get; set; }
 
     /// <summary>
-    /// Gets or sets the participants of the chat with their last activity time.
-    /// Can be null when requesting a list of chats.
+    /// Gets or sets the participants of the chat: user ID → time of the last activity (Unix timestamp in milliseconds).
+    /// Visible to chat admins only; can be null when requesting a list of chats.
     /// </summary>
     [JsonPropertyName("participants")]
-    public object? Participants { get; set; }
+    public Dictionary<long, long>? Participants { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the chat is public.

@@ -12,7 +12,7 @@ public class SubscriptionsResponse
     /// </summary>
     /// <value>The list of subscriptions.</value>
     [JsonPropertyName("subscriptions")]
-    public Subscription[] Subscriptions { get; set; } = default!;
+    public Subscription[] Subscriptions { get; set; } = Array.Empty<Subscription>();
 }
 
 

@@ -43,7 +43,7 @@ public class CallbackQueryTests
         callbackQuery.User!.Id.Should().Be(123);
         callbackQuery.Message.Should().BeNull();
         callbackQuery.Payload.Should().BeNull();
-        callbackQuery.Timestamp.Should().BeNull();
+        callbackQuery.Timestamp.Should().Be(0);
     }
 
     [Fact]

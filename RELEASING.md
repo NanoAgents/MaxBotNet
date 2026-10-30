@@ -52,6 +52,7 @@ Tag format must stay `vX.Y.Z` or `vX.Y.Z-alpha`, because `.github/workflows/rele
 - Tag push (or a manual `workflow_dispatch` run with `version`) triggers `.github/workflows/release.yml`.
 - Workflow steps: restore → format → analyzers → build → tests → validate version/changelog → `dotnet pack` → upload artifacts → `dotnet nuget push` → GitHub Release.
 - Release notes are extracted from the matching `CHANGELOG.md` section.
+- The GitHub Release is published as **Latest** (not a pre-release), including `-alpha` versions — they are the project's regular releases. For a manual run, uncheck the `latest` input to publish a pre-release instead.
 - NuGet publishing requires the `NUGET_API_KEY` secret.
 - GitHub Release creation requires workflow `contents: write` permission.
 - Monitor the run in GitHub Actions. The run must be green before announcing the release.

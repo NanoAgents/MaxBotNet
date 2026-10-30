@@ -12,5 +12,5 @@ public class GetMessagesResponse
     /// </summary>
     /// <value>The list of messages.</value>
     [JsonPropertyName("messages")]
-    public Message[] Messages { get; set; } = default!;
+    public Message[] Messages { get; set; } = Array.Empty<Message>();
 }

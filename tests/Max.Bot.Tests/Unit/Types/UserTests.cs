@@ -44,7 +44,7 @@ public class UserTests
         result.Should().NotBeNull();
         result!.Id.Should().Be(123);
         result.Username.Should().BeNull();
-        result.FirstName.Should().BeNull();
+        result.FirstName.Should().BeEmpty();
         result.LastName.Should().BeNull();
         result.IsBot.Should().BeTrue();
     }
