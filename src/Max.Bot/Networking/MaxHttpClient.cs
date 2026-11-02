@@ -109,7 +109,7 @@ public class MaxHttpClient : IMaxHttpClient
 
                 return await ExecuteWithResponseHandlingAsync(httpRequest, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception ex) when (ShouldRetry(ex, attempt, request) || attempt == _options.RetryCount)
+            catch (Exception ex) when (!IsCancelledByCaller(ex, cancellationToken) && (ShouldRetry(ex, attempt, request) || attempt == _options.RetryCount))
             {
                 lastException = ex;
                 attempt++;
@@ -170,7 +170,7 @@ public class MaxHttpClient : IMaxHttpClient
 
                 return await ExecuteWithResponseHandlingAsync(httpRequest, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception ex) when (ShouldRetry(ex, attempt) || attempt == _options.RetryCount)
+            catch (Exception ex) when (!IsCancelledByCaller(ex, cancellationToken) && (ShouldRetry(ex, attempt) || attempt == _options.RetryCount))
             {
                 lastException = ex;
                 attempt++;
@@ -336,6 +336,13 @@ public class MaxHttpClient : IMaxHttpClient
         }
         return null;
     }
+
+    /// <summary>
+    /// Cancellation requested by the caller is not a network failure: it is neither retried nor logged as an error.
+    /// A <see cref="TaskCanceledException"/> raised by <see cref="HttpClient.Timeout"/> (caller token not cancelled) stays retryable.
+    /// </summary>
+    private static bool IsCancelledByCaller(Exception ex, CancellationToken cancellationToken) =>
+        ex is OperationCanceledException && cancellationToken.IsCancellationRequested;
 
     private bool ShouldRetry(Exception ex, int attempt, MaxApiRequest? request = null)
     {
