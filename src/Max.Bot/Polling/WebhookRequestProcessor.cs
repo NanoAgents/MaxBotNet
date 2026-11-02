@@ -78,6 +78,11 @@ internal static class WebhookRequestProcessor
             // * Answer MAX anyway: a non-2xx status would make MAX deliver the same update again.
             logger?.LogWarning(ex, "Webhook update handling exceeded Webhook.HandlerTimeout ({Timeout}).", handlerTimeout);
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            // * The client (MAX) closed the connection: nobody reads the response, so this is not an error.
+            return StatusCodes.Status499ClientClosedRequest;
+        }
 
         return StatusCodes.Status200OK;
     }

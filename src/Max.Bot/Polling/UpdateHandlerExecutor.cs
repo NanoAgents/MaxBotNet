@@ -66,6 +66,11 @@ internal static class UpdateHandlerExecutor
 
             logger?.LogWarning(ex, "Update handler timed out after {Timeout}. UpdateId={UpdateId}", options.Handling.HandlerTimeout, update.UpdateId);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // * Polling stopped or the webhook request was cancelled: not a handler failure, let the caller see the cancellation.
+            throw;
+        }
         catch (Exception ex)
         {
             if (options.Handling.PropagateHandlerExceptions)

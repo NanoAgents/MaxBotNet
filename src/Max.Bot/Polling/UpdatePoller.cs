@@ -208,6 +208,12 @@ public sealed class UpdatePoller : IAsyncDisposable
                         {
                             await DispatchAsync(update, cancellationToken).ConfigureAwait(false);
                         }
+                        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                        {
+                            // * Stopped mid-update: keep the marker so the batch is fetched again after restart.
+                            batchCompleted = false;
+                            break;
+                        }
                         catch (Exception ex)
                         {
                             _logger?.LogError(ex, "Failed to dispatch update {UpdateId}. Skipping.", update.UpdateId);
@@ -291,6 +297,10 @@ public sealed class UpdatePoller : IAsyncDisposable
         {
             throw; // Let the caller's catch-all handle it
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw; // * Stop requested: not a network error, PollAsync exits quietly
+        }
         catch (Exception ex)
         {
             throw new MaxNetworkException($"Failed to fetch updates: {ex.Message}", ex);
@@ -360,7 +370,14 @@ public sealed class UpdatePoller : IAsyncDisposable
         _consecutiveErrors++;
         var delay = NextBackoffDelay();
         _logger?.LogWarning(exception, "{Message} Retrying in {Delay}ms.", message, delay.TotalMilliseconds);
-        await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // * Stopped during backoff: let PollAsync leave the loop and drain in-flight handlers.
+        }
     }
 
     private TimeSpan NextBackoffDelay()

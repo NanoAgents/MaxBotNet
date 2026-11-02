@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1-alpha] - 2026-11-02
+
+### Fixed
+
+- **Polling shutdown**: при остановке бота `UpdatePoller` логировал `Network error while polling updates` с `MaxNetworkException`, внутри которого был `TaskCanceledException`: `FetchUpdatesAsync` заворачивал отмену long-polling запроса в сетевую ошибку. Теперь отмена пробрасывается как есть, и поллер завершается без предупреждений. Спасибо @diquoks!
+- **HTTP client cancellation**: `MaxHttpClient` считал отмену токеном вызывающего кода сбоем — писал `HTTP request failed on attempt …` / `HTTP request retry attempts failed` и пытался повторить запрос. Отмена теперь сразу пробрасывается; таймаут `HttpClient` (токен не отменён) по-прежнему повторяется.
+- **Handler cancellation**: если обработчик завершался `OperationCanceledException` из-за остановки поллера или отмены webhook-запроса, это логировалось как `Update handler threw an exception`. Теперь отмена пробрасывается без ошибки в логе; прерванная пачка обновлений не сдвигает маркер и будет получена снова после перезапуска.
+- **Backoff during stop**: остановка во время паузы после сетевой ошибки больше не выходит из цикла поллинга исключением, минуя ожидание запущенных обработчиков.
+- **Webhook aborted by client**: если MAX закрыл соединение до ответа, `MapMaxWebhook`/`WebhookController` возвращает `499` вместо необработанного исключения.
+
 ## [0.8.0-alpha] - 2026-10-30
 
 Модели приведены к [OpenAPI-схеме MAX Bot API](https://github.com/max-messenger/max-bot-api-client-go/blob/main/schema.yaml): строковые и `object`-поля стали типизированными, а nullability совпадает с документацией — меньше ручного разбора и null-проверок. Спасибо @diquoks за отзыв!
@@ -437,7 +447,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/NanoAgents/MaxBotNet/compare/v0.8.0-alpha...HEAD
+[Unreleased]: https://github.com/NanoAgents/MaxBotNet/compare/v0.8.1-alpha...HEAD
+[0.8.1-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.8.0-alpha...v0.8.1-alpha
 [0.8.0-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.7.1-alpha...v0.8.0-alpha
 [0.7.1-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.7.0-alpha...v0.7.1-alpha
 [0.7.0-alpha]: https://github.com/NanoAgents/MaxBotNet/compare/v0.6.3-alpha...v0.7.0-alpha
